@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="Lega Calcio Over 40">
+  <defs>
+    <linearGradient id="mono-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e1512" />
+      <stop offset="100%" stop-color="#052012" />
+    </linearGradient>
+    <linearGradient id="mono-g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22e07a" />
+      <stop offset="100%" stop-color="#16a34a" />
+    </linearGradient>
+    <linearGradient id="mono-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f3d16b" />
+      <stop offset="100%" stop-color="#d9b84a" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="#060907" />
+  <path d="M50 4 L94 20 V50 C94 76 76 92 50 97 C24 92 6 76 6 50 V20 Z" fill="url(#mono-bg)" stroke="url(#mono-gold)" stroke-width="3" />
+  <path d="M50 4 L94 20 V50 C94 76 76 92 50 97 C24 92 6 76 6 50 V20 Z" fill="url(#mono-g)" opacity="0.14" />
+  <text x="50" y="47" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="32" fill="url(#mono-gold)">O40</text>
+  <text x="50" y="78" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="14" letter-spacing="2" fill="#f4f7f4">LEGA</text>
+</svg>

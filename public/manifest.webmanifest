@@ -1,0 +1,27 @@
+{
+  "name": "Lega Calcio Over 40 — Campo Santa Teresa",
+  "short_name": "Lega Over 40",
+  "description": "L'app ufficiale della Lega Calcio Over 40 del Campo Sportivo Santa Teresa di Scafati: risultati live, classifiche, statistiche e tutta la passione del campionato.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#060907",
+  "theme_color": "#060907",
+  "lang": "it",
+  "dir": "ltr",
+  "categories": ["sports", "lifestyle", "news"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Partite di oggi", "url": "/partite", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Classifica", "url": "/classifica", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Squadre", "url": "/squadre", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

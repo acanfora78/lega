@@ -1,0 +1,244 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --radius: 1.1rem;
+
+  /* Base surfaces — deep, near-black with a whisper of green */
+  --background: #060907;
+  --background-elevated: #0b100c;
+  --surface: #0e1512;
+  --surface-2: #131b17;
+  --foreground: #f4f7f4;
+  --muted-foreground: #9aa89f;
+
+  /* Brand green */
+  --primary: #16a34a;
+  --primary-foreground: #04140b;
+  --primary-glow: #22e07a;
+  --pitch-900: #052012;
+  --pitch-800: #06301b;
+  --pitch-700: #0a4526;
+
+  /* Gold accent */
+  --gold: #d9b84a;
+  --gold-bright: #f3d16b;
+  --gold-foreground: #1a1305;
+
+  --border: rgba(244, 247, 244, 0.09);
+  --border-strong: rgba(244, 247, 244, 0.16);
+  --ring: var(--primary-glow);
+
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --live: #ef4444;
+
+  --card: rgba(20, 27, 23, 0.6);
+  --card-foreground: var(--foreground);
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+.light {
+  color-scheme: light;
+
+  --background: #f3f5f2;
+  --background-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #eef1ec;
+  --foreground: #0c1410;
+  --muted-foreground: #5b6a60;
+
+  --primary-foreground: #ffffff;
+  --pitch-900: #e7f3ea;
+  --pitch-800: #d9ecdd;
+  --pitch-700: #c7e4cd;
+
+  --gold-foreground: #2a2003;
+
+  --border: rgba(12, 20, 16, 0.09);
+  --border-strong: rgba(12, 20, 16, 0.16);
+
+  --card: rgba(255, 255, 255, 0.7);
+  --card-foreground: var(--foreground);
+}
+
+.light body {
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -10%, var(--pitch-800) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(217, 184, 74, 0.12) 0%, transparent 50%),
+    var(--background);
+}
+
+.light .glass,
+.light .glass-strong {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.55));
+  box-shadow: 0 1px 2px rgba(12, 20, 16, 0.04);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-elevated: var(--background-elevated);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-glow: var(--primary-glow);
+  --color-pitch-900: var(--pitch-900);
+  --color-pitch-800: var(--pitch-800);
+  --color-pitch-700: var(--pitch-700);
+
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-gold-foreground: var(--gold-foreground);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ring: var(--ring);
+
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-live: var(--live);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --font-display: var(--font-outfit);
+  --font-sans: var(--font-inter);
+  --font-score: var(--font-rajdhani);
+
+  --radius-sm: calc(var(--radius) - 0.5rem);
+  --radius-md: calc(var(--radius) - 0.25rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.5rem);
+  --radius-2xl: calc(var(--radius) + 1.25rem);
+
+  --animate-shimmer: shimmer 2s linear infinite;
+  --animate-pulse-live: pulse-live 1.6s ease-in-out infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.6s ease-out both;
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.85); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -10%, var(--pitch-800) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(217, 184, 74, 0.06) 0%, transparent 50%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+
+@layer utilities {
+  .glass {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--border);
+  }
+
+  .glass-strong {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border: 1px solid var(--border-strong);
+  }
+
+  .text-gradient-gold {
+    background: linear-gradient(120deg, var(--gold-bright), var(--gold) 60%, #a3812b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .text-gradient-green {
+    background: linear-gradient(120deg, var(--primary-glow), var(--primary) 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-pitch-gradient {
+    background: radial-gradient(ellipse 140% 100% at 50% -20%, var(--pitch-700) 0%, var(--pitch-900) 45%, var(--background) 85%);
+  }
+
+  .bg-shimmer {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%, var(--surface) 63%);
+    background-size: 400% 100%;
+  }
+
+  .divider-fade {
+    background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+  }
+
+  .ring-focus {
+    outline: none;
+  }
+  .ring-focus:focus-visible {
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
