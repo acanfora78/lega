@@ -45,7 +45,7 @@ export function MatchCard({
 
       <div className="flex items-center gap-3">
         <div className="flex flex-1 items-center gap-2.5">
-          <TeamCrest nome={casa.nome} colors={casa.coloriSociali} size={32} />
+          <TeamCrest nome={casa.nome} colors={casa.coloriSociali} logoUrl={casa.logoUrl} size={32} />
           <span className="truncate text-sm font-semibold">{casa.nomeBreve}</span>
         </div>
 
@@ -61,7 +61,7 @@ export function MatchCard({
 
         <div className="flex flex-1 items-center justify-end gap-2.5">
           <span className="truncate text-right text-sm font-semibold">{trasferta.nomeBreve}</span>
-          <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} size={32} />
+          <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} logoUrl={trasferta.logoUrl} size={32} />
         </div>
       </div>
 

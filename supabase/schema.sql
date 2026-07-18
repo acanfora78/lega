@@ -632,3 +632,28 @@ create table if not exists lega_store (
 alter table lega_store enable row level security;
 create policy "lega_store_lettura_pubblica" on lega_store for select using (true);
 create policy "lega_store_scrittura_organizzatore" on lega_store for all using (is_organizzatore()) with check (is_organizzatore());
+
+-- ============================================================================
+-- STORAGE — bucket per loghi, foto giocatori/squadre, copertine news, media
+-- ----------------------------------------------------------------------------
+-- Un solo bucket pubblico in lettura; le scritture (upload, sostituzione,
+-- cancellazione) restano riservate all'organizzatore tramite la stessa
+-- funzione is_organizzatore() usata per il resto dello schema. L'upload parte
+-- direttamente dal browser (client Supabase autenticato con la sessione
+-- dell'organizzatore), senza passare da un endpoint del backend.
+-- ============================================================================
+insert into storage.buckets (id, name, public)
+values ('lega-media', 'lega-media', true)
+on conflict (id) do nothing;
+
+create policy "lega_media_lettura_pubblica" on storage.objects for select
+  using (bucket_id = 'lega-media');
+
+create policy "lega_media_scrittura_organizzatore" on storage.objects for insert
+  with check (bucket_id = 'lega-media' and is_organizzatore());
+
+create policy "lega_media_modifica_organizzatore" on storage.objects for update
+  using (bucket_id = 'lega-media' and is_organizzatore());
+
+create policy "lega_media_rimozione_organizzatore" on storage.objects for delete
+  using (bucket_id = 'lega-media' and is_organizzatore());

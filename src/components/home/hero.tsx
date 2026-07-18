@@ -58,7 +58,7 @@ export function Hero({
             transition={{ duration: 0.5 }}
             className="flex flex-col items-center gap-3 text-center sm:w-40"
           >
-            <TeamCrest nome={casa.nome} colors={casa.coloriSociali} size={84} className="animate-float" />
+            <TeamCrest nome={casa.nome} colors={casa.coloriSociali} logoUrl={casa.logoUrl} size={84} className="animate-float" />
             <p className="font-display text-base font-bold leading-tight">{casa.nomeBreve}</p>
           </motion.div>
 
@@ -92,7 +92,7 @@ export function Hero({
             transition={{ duration: 0.5 }}
             className="flex flex-col items-center gap-3 text-center sm:w-40"
           >
-            <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} size={84} className="animate-float" />
+            <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} logoUrl={trasferta.logoUrl} size={84} className="animate-float" />
             <p className="font-display text-base font-bold leading-tight">{trasferta.nomeBreve}</p>
           </motion.div>
         </div>

@@ -43,14 +43,14 @@ export function Leaderboard({
             >
               {idx + 1}
             </span>
-            <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} size={40} />
+            <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} fotoUrl={giocatore.fotoUrl} size={40} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">
                 {giocatore.nome} {giocatore.cognome}
               </p>
               {squadra && (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} size={13} />
+                  <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} logoUrl={squadra.logoUrl} size={13} />
                   {squadra.nomeBreve}
                   {secondary && ` · ${secondary(giocatore)}`}
                 </p>

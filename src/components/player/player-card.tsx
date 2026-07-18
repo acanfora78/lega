@@ -27,7 +27,7 @@ export async function PlayerCard({
         className
       )}
     >
-      <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} numero={giocatore.numeroMaglia} size={48} ring />
+      <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} fotoUrl={giocatore.fotoUrl} numero={giocatore.numeroMaglia} size={48} ring />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold leading-tight">
           {giocatore.nome} {giocatore.cognome}

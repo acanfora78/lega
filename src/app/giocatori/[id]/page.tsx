@@ -52,7 +52,7 @@ export default async function GiocatoreDetailPage({ params }: { params: Promise<
         <PitchBackdrop />
         <StadiumLights />
         <div className="relative flex flex-col items-center gap-4 px-6 py-10 text-center sm:flex-row sm:items-end sm:text-left">
-          <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} numero={giocatore.numeroMaglia} size={110} ring />
+          <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} fotoUrl={giocatore.fotoUrl} numero={giocatore.numeroMaglia} size={110} ring />
           <div className="flex-1">
             <div className="mb-2 flex flex-wrap justify-center gap-2 sm:justify-start">
               <Badge variant="default">{giocatore.ruolo}</Badge>
@@ -64,7 +64,7 @@ export default async function GiocatoreDetailPage({ params }: { params: Promise<
               {giocatore.nome} {giocatore.cognome}
             </h1>
             <Link href={`/squadre/${squadra.slug}`} className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary-glow">
-              <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} size={20} />
+              <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} logoUrl={squadra.logoUrl} size={20} />
               {squadra.nome}
             </Link>
             <p className="mt-4 max-w-2xl text-sm text-muted-foreground">{giocatore.bio}</p>

@@ -6,7 +6,7 @@ import { PitchBackdrop } from "@/components/brand/pitch-art";
 import { NewsCard } from "@/components/news/news-card";
 import { Badge } from "@/components/ui/badge";
 import { getArticoli, getArticoloBySlug, getSquadraById } from "@/lib/data";
-import { formatDateIt } from "@/lib/utils";
+import { formatDateIt, cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
 export async function generateStaticParams() {
@@ -35,8 +35,13 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ slu
         <ArrowLeft className="size-4" /> Tutte le news
       </Link>
 
-      <div className="relative h-52 overflow-hidden rounded-3xl bg-pitch-gradient sm:h-72">
-        <PitchBackdrop />
+      <div className={cn("relative h-52 overflow-hidden rounded-3xl sm:h-72", !articolo.copertinaUrl && "bg-pitch-gradient")}>
+        {articolo.copertinaUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- copertina caricata dall'organizzatore su Supabase Storage
+          <img src={articolo.copertinaUrl} alt="" className="size-full object-cover" />
+        ) : (
+          <PitchBackdrop />
+        )}
       </div>
 
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-4">

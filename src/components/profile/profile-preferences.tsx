@@ -52,7 +52,7 @@ export function ProfilePreferences({ squadre, giocatori }: { squadre: Squadra[];
           </Select>
           {squadraSel && (
             <div className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3">
-              <TeamCrest nome={squadraSel.nome} colors={squadraSel.coloriSociali} size={40} />
+              <TeamCrest nome={squadraSel.nome} colors={squadraSel.coloriSociali} logoUrl={squadraSel.logoUrl} size={40} />
               <div>
                 <p className="text-sm font-semibold">{squadraSel.nome}</p>
                 <p className="text-xs text-muted-foreground">Riceverai notifiche prioritarie per questa squadra</p>
@@ -77,7 +77,7 @@ export function ProfilePreferences({ squadre, giocatori }: { squadre: Squadra[];
           </Select>
           {giocatoreSel && (
             <div className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3">
-              <PlayerAvatar nome={giocatoreSel.nome} cognome={giocatoreSel.cognome} numero={giocatoreSel.numeroMaglia} size={40} />
+              <PlayerAvatar nome={giocatoreSel.nome} cognome={giocatoreSel.cognome} fotoUrl={giocatoreSel.fotoUrl} numero={giocatoreSel.numeroMaglia} size={40} />
               <div>
                 <p className="text-sm font-semibold">
                   {giocatoreSel.nome} {giocatoreSel.cognome}

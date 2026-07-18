@@ -24,8 +24,16 @@ export function NewsCard({ articolo, featured = false }: { articolo: Articolo; f
       )}
     >
       <div
-        className={cn("relative flex items-end bg-pitch-gradient p-5", featured ? "h-40 sm:h-56" : "h-24")}
+        className={cn(
+          "relative flex items-end p-5",
+          featured ? "h-40 sm:h-56" : "h-24",
+          !articolo.copertinaUrl && "bg-pitch-gradient"
+        )}
       >
+        {articolo.copertinaUrl && (
+          // eslint-disable-next-line @next/next/no-img-element -- copertina caricata dall'organizzatore su Supabase Storage
+          <img src={articolo.copertinaUrl} alt="" className="absolute inset-0 size-full object-cover" />
+        )}
         <Badge variant={meta.variant} className="absolute left-4 top-4">
           <Icon className="size-3" />
           {meta.label}

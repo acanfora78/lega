@@ -154,14 +154,14 @@ export default async function HomePage() {
                 <div className="absolute inset-0 bg-pitch-gradient opacity-80" />
                 <CardContent className="relative flex flex-col items-center gap-3 p-6 text-center">
                   <Trophy className="size-6 text-gold-bright" />
-                  <PlayerAvatar nome={mvpGiocatore.nome} cognome={mvpGiocatore.cognome} size={80} numero={mvpGiocatore.numeroMaglia} ring />
+                  <PlayerAvatar nome={mvpGiocatore.nome} cognome={mvpGiocatore.cognome} fotoUrl={mvpGiocatore.fotoUrl} size={80} numero={mvpGiocatore.numeroMaglia} ring />
                   <div>
                     <p className="font-display text-lg font-bold">
                       {mvpGiocatore.nome} {mvpGiocatore.cognome}
                     </p>
                     {mvpSquadra && (
                       <p className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-                        <TeamCrest nome={mvpSquadra.nome} colors={mvpSquadra.coloriSociali} size={16} />
+                        <TeamCrest nome={mvpSquadra.nome} colors={mvpSquadra.coloriSociali} logoUrl={mvpSquadra.logoUrl} size={16} />
                         {mvpSquadra.nomeBreve}
                       </p>
                     )}
@@ -234,7 +234,7 @@ export default async function HomePage() {
                 href={`/squadre/${s.slug}`}
                 className="flex shrink-0 flex-col items-center gap-2 rounded-2xl glass px-4 py-3 hover:border-primary-glow/30"
               >
-                <TeamCrest nome={s.nome} colors={s.coloriSociali} size={40} />
+                <TeamCrest nome={s.nome} colors={s.coloriSociali} logoUrl={s.logoUrl} size={40} />
                 <span className="text-xs font-semibold">{s.nomeBreve}</span>
               </Link>
             ))}

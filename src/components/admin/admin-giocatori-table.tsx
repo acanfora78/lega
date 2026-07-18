@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ImageUpload } from "@/components/admin/image-upload";
 import type { Giocatore, Ruolo, Squadra } from "@/lib/types";
 
 const RUOLI: Ruolo[] = ["Portiere", "Difensore", "Centrocampista", "Attaccante"];
@@ -21,7 +22,19 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
   const [squadraFiltro, setSquadraFiltro] = useState("tutte");
   const [editing, setEditing] = useState<Giocatore | null>(null);
   const [nuovoOpen, setNuovoOpen] = useState(false);
+  const [fotoUrlModifica, setFotoUrlModifica] = useState("");
+  const [fotoUrlNuovo, setFotoUrlNuovo] = useState("");
   const squadreMap = useMemo(() => new Map(squadre.map((s) => [s.id, s])), [squadre]);
+
+  function apriModifica(g: Giocatore) {
+    setEditing(g);
+    setFotoUrlModifica(g.fotoUrl ?? "");
+  }
+
+  function apriNuovo() {
+    setFotoUrlNuovo("");
+    setNuovoOpen(true);
+  }
 
   const filtrati = useMemo(() => {
     return giocatori.filter((g) => {
@@ -53,6 +66,7 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
           cognome: String(form.get("cognome") ?? editing.cognome),
           numeroMaglia: Number(form.get("numero") ?? editing.numeroMaglia),
           bio: String(form.get("bio") ?? editing.bio),
+          fotoUrl: fotoUrlModifica,
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
@@ -84,6 +98,7 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
           numeroMaglia: Number(form.get("numero") ?? 1),
           eta: Number(form.get("eta") ?? 40),
           bio: String(form.get("bio") ?? ""),
+          fotoUrl: fotoUrlNuovo,
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
@@ -115,7 +130,7 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
             ))}
           </SelectContent>
         </Select>
-        <Button size="sm" className="shrink-0" onClick={() => setNuovoOpen(true)} disabled={squadre.length === 0}>
+        <Button size="sm" className="shrink-0" onClick={apriNuovo} disabled={squadre.length === 0}>
           <Plus className="size-4" /> Nuovo giocatore
         </Button>
         {isPending && <Loader2 className="size-4 shrink-0 animate-spin self-center text-muted-foreground" />}
@@ -146,7 +161,7 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
                   <tr key={g.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5 font-semibold">
-                        <PlayerAvatar nome={g.nome} cognome={g.cognome} size={30} numero={g.numeroMaglia} />
+                        <PlayerAvatar nome={g.nome} cognome={g.cognome} fotoUrl={g.fotoUrl} size={30} numero={g.numeroMaglia} />
                         {g.nome} {g.cognome}
                       </div>
                     </td>
@@ -156,7 +171,7 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
                     <td className="px-2 py-3 text-center tabular-nums">{stat?.assist ?? 0}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1.5">
-                        <Button variant="ghost" size="icon" onClick={() => setEditing(g)} aria-label="Modifica">
+                        <Button variant="ghost" size="icon" onClick={() => apriModifica(g)} aria-label="Modifica">
                           <Pencil className="size-4" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => elimina(g.id)} aria-label="Elimina">
@@ -179,6 +194,10 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
           </DialogHeader>
           {editing && (
             <form action={(fd) => salva(fd)} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label>Foto</Label>
+                <ImageUpload value={fotoUrlModifica} onChange={setFotoUrlModifica} folder="giocatori/foto" shape="circle" label="Carica foto" />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="nome">Nome</Label>
@@ -211,6 +230,10 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
             <DialogTitle>Nuovo giocatore</DialogTitle>
           </DialogHeader>
           <form action={(fd) => crea(fd)} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>Foto</Label>
+              <ImageUpload value={fotoUrlNuovo} onChange={setFotoUrlNuovo} folder="giocatori/foto" shape="circle" label="Carica foto" />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="n-nome">Nome</Label>

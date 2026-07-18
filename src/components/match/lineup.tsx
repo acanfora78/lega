@@ -10,7 +10,7 @@ async function VoceRiga({ voce }: { voce: FormazioneVoce }) {
   return (
     <div className="flex items-center gap-2.5 py-1.5">
       <span className="font-score w-5 shrink-0 text-center text-xs font-bold text-muted-foreground">{voce.numero}</span>
-      <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} size={30} />
+      <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} fotoUrl={giocatore.fotoUrl} size={30} />
       <span className="min-w-0 flex-1 truncate text-sm font-medium">
         {giocatore.nome} {giocatore.cognome}
       </span>

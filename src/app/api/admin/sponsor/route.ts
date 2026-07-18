@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const sponsor: Sponsor = {
     id: `sponsor-${Date.now()}`,
     nome,
-    logoUrl: "",
+    logoUrl: String(body.logoUrl ?? ""),
     livello: body.livello ?? "silver",
     descrizione: String(body.descrizione ?? ""),
   };

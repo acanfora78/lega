@@ -31,14 +31,14 @@ export async function TopList({
             >
               {idx + 1}
             </span>
-            <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} size={36} />
+            <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} fotoUrl={giocatore.fotoUrl} size={36} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold group-hover:text-primary-glow">
                 {giocatore.nome} {giocatore.cognome}
               </p>
               {squadra && (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} size={12} />
+                  <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} logoUrl={squadra.logoUrl} size={12} />
                   {squadra.nomeBreve}
                 </p>
               )}

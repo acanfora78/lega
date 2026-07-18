@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ImageUpload } from "@/components/admin/image-upload";
 import type { RigaClassifica, Squadra } from "@/lib/types";
 
 interface Riga {
@@ -22,14 +23,20 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
   const [isPending, startTransition] = useTransition();
   const [editing, setEditing] = useState<Squadra | null>(null);
   const [open, setOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
 
   function apriNuovo() {
     setEditing(null);
+    setLogoUrl("");
+    setCoverUrl("");
     setOpen(true);
   }
 
   function apriModifica(s: Squadra) {
     setEditing(s);
+    setLogoUrl(s.logoUrl ?? "");
+    setCoverUrl(s.coverUrl ?? "");
     setOpen(true);
   }
 
@@ -40,6 +47,8 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
       allenatore: String(form.get("allenatore") ?? ""),
       fondazione: Number(form.get("fondazione") ?? 0),
       descrizione: String(form.get("descrizione") ?? ""),
+      logoUrl,
+      coverUrl,
     };
 
     try {
@@ -96,7 +105,7 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
                 <tr key={squadra.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5 font-semibold">
-                      <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} size={28} />
+                      <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} logoUrl={squadra.logoUrl} size={28} />
                       {squadra.nome}
                     </div>
                   </td>
@@ -126,6 +135,14 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
             <DialogTitle>{editing ? "Modifica squadra" : "Nuova squadra"}</DialogTitle>
           </DialogHeader>
           <form action={(fd) => salva(fd)} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>Logo</Label>
+              <ImageUpload value={logoUrl} onChange={setLogoUrl} folder="squadre/loghi" shape="circle" label="Carica logo" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Copertina</Label>
+              <ImageUpload value={coverUrl} onChange={setCoverUrl} folder="squadre/copertine" shape="wide" label="Carica copertina" />
+            </div>
             <Field label="Nome completo" name="nome" defaultValue={editing?.nome} required />
             <Field label="Nome breve" name="nomeBreve" defaultValue={editing?.nomeBreve} required />
             <Field label="Allenatore" name="allenatore" defaultValue={editing?.allenatore} />

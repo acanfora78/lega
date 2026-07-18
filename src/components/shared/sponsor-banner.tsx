@@ -21,9 +21,14 @@ export async function SponsorBanner({ title = "I nostri sponsor" }: { title?: st
           <div
             key={s.id}
             title={s.nome}
-            className="flex aspect-square items-center justify-center rounded-xl border border-border bg-white/[0.03] text-xs font-bold text-muted-foreground transition-colors hover:border-gold/40 hover:text-gold-bright"
+            className="flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-border bg-white/[0.03] text-xs font-bold text-muted-foreground transition-colors hover:border-gold/40 hover:text-gold-bright"
           >
-            {initialsMark(s.nome)}
+            {s.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- logo caricato dall'organizzatore su Supabase Storage
+              <img src={s.logoUrl} alt={s.nome} className="size-full object-cover" />
+            ) : (
+              initialsMark(s.nome)
+            )}
           </div>
         ))}
       </div>

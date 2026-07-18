@@ -42,7 +42,7 @@ export async function MatchDetailHeader({ partita }: { partita: Partita }) {
 
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
           <Link href={`/squadre/${casa.slug}`} className="flex flex-col items-center gap-3 text-center sm:w-40">
-            <TeamCrest nome={casa.nome} colors={casa.coloriSociali} size={76} />
+            <TeamCrest nome={casa.nome} colors={casa.coloriSociali} logoUrl={casa.logoUrl} size={76} />
             <p className="font-display text-base font-bold leading-tight hover:text-primary-glow">{casa.nomeBreve}</p>
           </Link>
 
@@ -69,7 +69,7 @@ export async function MatchDetailHeader({ partita }: { partita: Partita }) {
           </div>
 
           <Link href={`/squadre/${trasferta.slug}`} className="flex flex-col items-center gap-3 text-center sm:w-40">
-            <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} size={76} />
+            <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} logoUrl={trasferta.logoUrl} size={76} />
             <p className="font-display text-base font-bold leading-tight hover:text-primary-glow">{trasferta.nomeBreve}</p>
           </Link>
         </div>

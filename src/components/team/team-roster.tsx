@@ -27,7 +27,7 @@ export async function TeamRoster({ giocatori, capitanoId, viceCapitanoId }: { gi
                     className="flex items-center gap-3 rounded-xl glass p-3 hover:border-primary-glow/30"
                   >
                     <span className="font-score w-5 shrink-0 text-center text-sm font-bold text-muted-foreground">{g.numeroMaglia}</span>
-                    <PlayerAvatar nome={g.nome} cognome={g.cognome} size={38} />
+                    <PlayerAvatar nome={g.nome} cognome={g.cognome} fotoUrl={g.fotoUrl} size={38} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">
                         {g.nome} {g.cognome}

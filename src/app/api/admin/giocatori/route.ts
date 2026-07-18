@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     slug: slugify(`${nome}-${cognome}`),
     nome,
     cognome,
-    fotoUrl: "",
+    fotoUrl: String(body.fotoUrl ?? ""),
     numeroMaglia: Number(body.numeroMaglia) || 1,
     ruolo: (body.ruolo as Ruolo) ?? "Centrocampista",
     eta: Number(body.eta) || 40,

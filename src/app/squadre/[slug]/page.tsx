@@ -53,11 +53,19 @@ export default async function SquadraDetailPage({ params }: { params: Promise<{ 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">
+        {squadra.coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- copertina caricata dall'organizzatore su Supabase Storage
+          <img src={squadra.coverUrl} alt="" className="absolute inset-0 size-full object-cover" />
+        ) : (
+          <>
+            <PitchBackdrop />
+            <StadiumLights />
+          </>
+        )}
         <div className="bg-aurora absolute inset-0 opacity-50 mix-blend-screen" />
-        <PitchBackdrop />
-        <StadiumLights />
+        {squadra.coverUrl && <div className="absolute inset-0 bg-black/40" />}
         <div className="relative flex flex-col items-center gap-4 px-6 py-10 text-center sm:flex-row sm:items-end sm:text-left">
-          <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} size={100} />
+          <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} logoUrl={squadra.logoUrl} size={100} />
           <div className="flex-1">
             {titoli && (
               <div className="mb-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
@@ -153,6 +161,10 @@ export default async function SquadraDetailPage({ params }: { params: Promise<{ 
                 {sponsor.map((s) => (
                   <Card key={s.id}>
                     <CardContent className="flex flex-col items-center gap-1.5 p-4 text-center">
+                      {s.logoUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element -- logo caricato dall'organizzatore su Supabase Storage
+                        <img src={s.logoUrl} alt={s.nome} className="mb-1 size-10 rounded-lg object-cover" />
+                      )}
                       <span className="font-display text-sm font-bold">{s.nome}</span>
                       <Badge variant={s.livello === "platinum" ? "gold" : "outline"}>{s.livello}</Badge>
                     </CardContent>

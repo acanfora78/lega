@@ -94,10 +94,10 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
                       </td>
                       <td className="px-2 py-3">
                         <div className="flex items-center gap-1.5">
-                          <TeamCrest nome={casa.nome} colors={casa.coloriSociali} size={20} />
+                          <TeamCrest nome={casa.nome} colors={casa.coloriSociali} logoUrl={casa.logoUrl} size={20} />
                           <span className="text-xs font-semibold">{casa.nomeBreve}</span>
                           <span className="text-muted-foreground">vs</span>
-                          <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} size={20} />
+                          <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} logoUrl={trasferta.logoUrl} size={20} />
                           <span className="text-xs font-semibold">{trasferta.nomeBreve}</span>
                         </div>
                       </td>

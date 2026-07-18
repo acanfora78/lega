@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     titolo,
     sommario: String(body.sommario ?? ""),
     contenuto: String(body.contenuto ?? ""),
-    copertinaUrl: "",
+    copertinaUrl: String(body.copertinaUrl ?? ""),
     categoria: body.categoria ?? "articolo",
     autore: String(body.autore ?? "Redazione Lega"),
     pubblicatoIl: new Date().toISOString(),

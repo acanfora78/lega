@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ImageUpload } from "@/components/admin/image-upload";
 import type { Articolo } from "@/lib/types";
 import { formatDateIt } from "@/lib/utils";
 
@@ -19,9 +20,17 @@ export function AdminNewsTable({ articoli }: { articoli: Articolo[] }) {
   const [isPending, startTransition] = useTransition();
   const [editing, setEditing] = useState<Articolo | null>(null);
   const [open, setOpen] = useState(false);
+  const [copertinaUrl, setCopertinaUrl] = useState("");
 
   function nuovo() {
     setEditing(null);
+    setCopertinaUrl("");
+    setOpen(true);
+  }
+
+  function modifica(a: Articolo) {
+    setEditing(a);
+    setCopertinaUrl(a.copertinaUrl ?? "");
     setOpen(true);
   }
 
@@ -31,6 +40,7 @@ export function AdminNewsTable({ articoli }: { articoli: Articolo[] }) {
       sommario: String(form.get("sommario") ?? ""),
       contenuto: String(form.get("contenuto") ?? ""),
       categoria: form.get("categoria"),
+      copertinaUrl,
     };
     try {
       const res = await fetch(editing ? `/api/admin/news/${editing.id}` : "/api/admin/news", {
@@ -91,7 +101,7 @@ export function AdminNewsTable({ articoli }: { articoli: Articolo[] }) {
                   <td className="px-2 py-3 text-muted-foreground">{formatDateIt(a.pubblicatoIl)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1.5">
-                      <Button variant="ghost" size="icon" onClick={() => { setEditing(a); setOpen(true); }} aria-label="Modifica">
+                      <Button variant="ghost" size="icon" onClick={() => modifica(a)} aria-label="Modifica">
                         <Pencil className="size-4" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => elimina(a.id)} aria-label="Elimina">
@@ -112,6 +122,10 @@ export function AdminNewsTable({ articoli }: { articoli: Articolo[] }) {
             <DialogTitle>{editing ? "Modifica articolo" : "Nuovo articolo"}</DialogTitle>
           </DialogHeader>
           <form action={(fd) => salva(fd)} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>Copertina</Label>
+              <ImageUpload value={copertinaUrl} onChange={setCopertinaUrl} folder="news/copertine" shape="wide" label="Carica copertina" />
+            </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="titolo">Titolo</Label>
               <Input id="titolo" name="titolo" defaultValue={editing?.titolo} required />

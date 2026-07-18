@@ -15,14 +15,30 @@ function initialsOf(nome: string) {
 export function TeamCrest({
   nome,
   colors,
+  logoUrl,
   size = 40,
   className,
 }: {
   nome: string;
   colors: [string, string];
+  logoUrl?: string;
   size?: number;
   className?: string;
 }) {
+  if (logoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- logo caricato dall'organizzatore su Supabase Storage, dominio non noto in anticipo
+      <img
+        src={logoUrl}
+        alt={nome}
+        width={size}
+        height={size}
+        className={cn("shrink-0 rounded-full object-cover drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]", className)}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   const rand = mulberry32(hashSeed(nome));
   const shape = SHAPES[Math.floor(rand() * SHAPES.length)];
   const id = `crest-${hashSeed(nome)}`;

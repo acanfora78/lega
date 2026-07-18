@@ -87,7 +87,7 @@ function FairPlayRow({ riga, posizione, squadra }: { riga: RigaClassifica; posiz
       <td className="px-3 py-3 text-center font-score text-xs font-bold text-muted-foreground">{posizione}</td>
       <td className="px-2 py-3">
         <Link href={`/squadre/${squadra.slug}`} className="flex items-center gap-2.5 font-semibold hover:text-primary-glow">
-          <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} size={24} />
+          <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} logoUrl={squadra.logoUrl} size={24} />
           {squadra.nomeBreve}
         </Link>
       </td>

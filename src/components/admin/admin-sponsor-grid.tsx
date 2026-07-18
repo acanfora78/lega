@@ -11,12 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ImageUpload } from "@/components/admin/image-upload";
 import type { Sponsor } from "@/lib/types";
 
 export function AdminSponsorGrid({ sponsor }: { sponsor: Sponsor[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("");
 
   async function salva(form: FormData) {
     try {
@@ -27,11 +29,13 @@ export function AdminSponsorGrid({ sponsor }: { sponsor: Sponsor[] }) {
           nome: String(form.get("nome") ?? ""),
           livello: form.get("livello"),
           descrizione: String(form.get("descrizione") ?? ""),
+          logoUrl,
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Sponsor aggiunto");
       setOpen(false);
+      setLogoUrl("");
       startTransition(() => router.refresh());
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Impossibile aggiungere lo sponsor");
@@ -65,12 +69,18 @@ export function AdminSponsorGrid({ sponsor }: { sponsor: Sponsor[] }) {
           {sponsor.map((s) => (
             <Card key={s.id}>
               <CardContent className="flex items-start justify-between gap-3 p-4">
-                <div>
-                  <p className="text-sm font-bold">{s.nome}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{s.descrizione}</p>
-                  <Badge variant={s.livello === "platinum" ? "gold" : "outline"} className="mt-2 capitalize">
-                    {s.livello}
-                  </Badge>
+                <div className="flex items-start gap-3">
+                  {s.logoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element -- logo caricato dall'organizzatore su Supabase Storage
+                    <img src={s.logoUrl} alt={s.nome} className="size-10 shrink-0 rounded-lg object-cover" />
+                  )}
+                  <div>
+                    <p className="text-sm font-bold">{s.nome}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{s.descrizione}</p>
+                    <Badge variant={s.livello === "platinum" ? "gold" : "outline"} className="mt-2 capitalize">
+                      {s.livello}
+                    </Badge>
+                  </div>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => elimina(s.id)} aria-label="Rimuovi">
                   <Trash2 className="size-4 text-danger" />
@@ -87,6 +97,10 @@ export function AdminSponsorGrid({ sponsor }: { sponsor: Sponsor[] }) {
             <DialogTitle>Nuovo sponsor</DialogTitle>
           </DialogHeader>
           <form action={(fd) => salva(fd)} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>Logo</Label>
+              <ImageUpload value={logoUrl} onChange={setLogoUrl} folder="sponsor/loghi" shape="square" label="Carica logo" />
+            </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="nome">Nome sponsor</Label>
               <Input id="nome" name="nome" required />

@@ -17,7 +17,13 @@ function AlbumGrid({ items, onSelect }: { items: AlbumMedia[]; onSelect: (a: Alb
           onClick={() => onSelect(a)}
           className="group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-2xl glass bg-pitch-gradient p-4 text-left transition-transform hover:-translate-y-1"
         >
-          <PitchBackdrop />
+          {a.copertinaUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- copertina caricata dall'organizzatore su Supabase Storage
+            <img src={a.copertinaUrl} alt="" className="absolute inset-0 size-full object-cover" />
+          ) : (
+            <PitchBackdrop />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
           <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full glass px-2.5 py-1 text-xs font-bold">
             {a.tipo === "video" ? <Play className="size-3" /> : <Images className="size-3" />}
             {a.itemsUrls.length}
@@ -65,12 +71,19 @@ export function MediaExplorer({ album }: { album: AlbumMedia[] }) {
               </DialogHeader>
               <p className="text-sm text-muted-foreground">{formatDateIt(selezionato.data, { day: "2-digit", month: "long", year: "numeric" })}</p>
               <div className="grid grid-cols-3 gap-2">
-                {selezionato.itemsUrls.map((_, i) => (
+                {selezionato.itemsUrls.map((item, i) => (
                   <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-pitch-gradient">
-                    <PitchBackdrop />
-                    {selezionato.tipo === "video" && (
-                      <Play className="absolute inset-0 m-auto size-6 text-white/80" />
+                    {item.url ? (
+                      item.tipo === "video" ? (
+                        <video src={item.url} className="size-full object-cover" controls />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element -- foto caricata dall'organizzatore su Supabase Storage
+                        <img src={item.url} alt="" className="size-full object-cover" />
+                      )
+                    ) : (
+                      <PitchBackdrop />
                     )}
+                    {item.tipo === "video" && !item.url && <Play className="absolute inset-0 m-auto size-6 text-white/80" />}
                   </div>
                 ))}
               </div>

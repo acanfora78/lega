@@ -86,7 +86,7 @@ export function MatchTimeline({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <p className={cn("text-sm font-semibold", isGoal && "text-primary-glow")}>{meta.label}</p>
-                  {squadraEvento && <TeamCrest nome={squadraEvento.nome} colors={squadraEvento.coloriSociali} size={14} />}
+                  {squadraEvento && <TeamCrest nome={squadraEvento.nome} colors={squadraEvento.coloriSociali} logoUrl={squadraEvento.logoUrl} size={14} />}
                 </div>
                 {giocatore && (
                   <p className="text-sm text-foreground/90">

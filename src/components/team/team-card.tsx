@@ -14,7 +14,7 @@ export function TeamCard({ squadra, riga }: { squadra: Squadra; riga?: RigaClass
         style={{ background: `linear-gradient(135deg, ${squadra.coloriSociali[0]}, transparent)` }}
       />
       <div className="relative flex items-center gap-3">
-        <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} size={52} />
+        <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} logoUrl={squadra.logoUrl} size={52} />
         <div className="min-w-0">
           <p className="truncate font-display font-bold leading-tight">{squadra.nomeBreve}</p>
           <p className="text-xs text-muted-foreground">Fondata nel {squadra.fondazione}</p>

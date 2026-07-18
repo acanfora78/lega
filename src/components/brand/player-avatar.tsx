@@ -15,6 +15,7 @@ const PALETTES: [string, string][] = [
 export function PlayerAvatar({
   nome,
   cognome,
+  fotoUrl,
   size = 44,
   numero,
   className,
@@ -22,11 +23,26 @@ export function PlayerAvatar({
 }: {
   nome: string;
   cognome: string;
+  fotoUrl?: string;
   size?: number;
   numero?: number;
   className?: string;
   ring?: boolean;
 }) {
+  if (fotoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- foto caricata dall'organizzatore su Supabase Storage, dominio non noto in anticipo
+      <img
+        src={fotoUrl}
+        alt={`${nome} ${cognome}`}
+        width={size}
+        height={size}
+        className={cn("shrink-0 rounded-full object-cover", ring && "ring-2 ring-white/15", className)}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   const key = `${nome} ${cognome}`;
   const rand = mulberry32(hashSeed(key));
   const [c1, c2] = PALETTES[Math.floor(rand() * PALETTES.length)];

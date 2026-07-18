@@ -135,7 +135,7 @@ export function AdminMatchControl({
         <CardContent className="flex flex-col gap-5 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <TeamCrest nome={casa.nome} colors={casa.coloriSociali} size={32} />
+              <TeamCrest nome={casa.nome} colors={casa.coloriSociali} logoUrl={casa.logoUrl} size={32} />
               <span className="font-semibold">{casa.nomeBreve}</span>
             </div>
             <div className="flex items-center gap-3">
@@ -145,7 +145,7 @@ export function AdminMatchControl({
             </div>
             <div className="flex items-center gap-2">
               <span className="font-semibold">{trasferta.nomeBreve}</span>
-              <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} size={32} />
+              <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} logoUrl={trasferta.logoUrl} size={32} />
             </div>
           </div>
 
