@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { cache } from "react";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import type {
   AlbumMedia,
@@ -215,9 +216,14 @@ async function persist(data: LegaData) {
 // ---------------------------------------------------------------------------
 // LETTURA
 // ---------------------------------------------------------------------------
-export async function getStore(): Promise<LegaData> {
+// Ogni funzione in src/lib/data/*.ts chiama getStore() in modo indipendente:
+// senza memoizzazione, una singola pagina che ne invoca dieci finirebbe per
+// rifare dieci letture di rete verso Supabase per lo stesso identico stato.
+// React.cache() deduplica le chiamate entro la stessa richiesta/render,
+// quindi il backend viene interrogato una sola volta per pagina.
+export const getStore = cache(async function getStore(): Promise<LegaData> {
   return load();
-}
+});
 
 // ---------------------------------------------------------------------------
 // CLASSIFICA — ricalcolata automaticamente ad ogni scrittura di risultato
