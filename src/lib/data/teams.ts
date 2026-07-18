@@ -15,7 +15,9 @@ export function getSquadraBySlug(slug: string): Squadra | undefined {
 
 export function getSponsorDellaSquadra(squadraId: string) {
   const { sponsor } = legaData();
+  if (sponsor.length === 0) return [];
   const idx = legaData().squadre.findIndex((s) => s.id === squadraId);
-  // distribuzione deterministica: ogni squadra ha 2 sponsor
-  return [sponsor[idx % sponsor.length], sponsor[(idx + 3) % sponsor.length]];
+  // distribuzione deterministica: ogni squadra ha al massimo 2 sponsor
+  const scelti = [sponsor[idx % sponsor.length], sponsor[(idx + 3) % sponsor.length]];
+  return scelti.filter((s, i, arr) => s && arr.findIndex((x) => x.id === s.id) === i);
 }

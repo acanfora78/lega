@@ -1,3 +1,5 @@
-// Riferimento temporale fisso dell'app demo: mantiene coerenti countdown,
-// partita live e "oggi" indipendentemente dall'orologio reale del server.
-export const NOW = new Date("2026-07-17T18:40:00+02:00");
+// Riferimento temporale reale dell'app: usato al posto di `new Date()` diretto
+// così eventuali logiche di test/preview possono sostituirlo in un unico punto.
+export function getNow(): Date {
+  return new Date();
+}

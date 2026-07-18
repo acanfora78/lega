@@ -14,6 +14,7 @@ const DESKTOP_ITEMS = [
   { href: "/statistiche", label: "Statistiche" },
   { href: "/news", label: "News" },
   { href: "/media", label: "Media" },
+  { href: "/campionati-passati", label: "Campionati Passati" },
   { href: "/hall-of-fame", label: "Hall of Fame" },
 ];
 

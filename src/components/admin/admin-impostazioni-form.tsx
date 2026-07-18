@@ -35,7 +35,7 @@ export function AdminImpostazioniForm({ stagione }: { stagione: Stagione }) {
             <Label>Regolamento sintetico</Label>
             <Textarea
               rows={4}
-              defaultValue="Girone unico ad andata e ritorno, 8 squadre. 3 punti per la vittoria, 1 per il pareggio. A parità di punti prevale la differenza reti, poi gli scontri diretti."
+              placeholder="Es. Girone unico ad andata e ritorno. 3 punti per la vittoria, 1 per il pareggio. A parità di punti prevale la differenza reti, poi gli scontri diretti."
             />
           </div>
         </CardContent>

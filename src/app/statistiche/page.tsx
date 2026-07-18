@@ -10,15 +10,17 @@ import {
   getClassificaPresenze,
   getClassificaCleanSheet,
   getMigliorPortiere,
+  getStagioneAttuale,
 } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Statistiche" };
 
 export default function StatistichePage() {
+  const stagione = getStagioneAttuale();
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div>
-        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-gold-bright">Stagione 2025/2026</p>
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-gold-bright">Stagione {stagione.etichetta}</p>
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Centro Statistiche</h1>
         <p className="mt-1 text-sm text-muted-foreground">Numeri, record e la corsa ai titoli individuali della Lega.</p>
       </div>

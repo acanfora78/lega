@@ -1,0 +1,192 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { Plus, Settings2 } from "lucide-react";
+import { TeamCrest } from "@/components/brand/team-crest";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { formatDateIt, formatTimeIt } from "@/lib/utils";
+import { getSquadraById } from "@/lib/data";
+import type { Partita, Squadra } from "@/lib/types";
+
+export function AdminPartiteTable({ partite: iniziali, squadre }: { partite: Partita[]; squadre: Squadra[] }) {
+  const [partite, setPartite] = useState(iniziali);
+  const [open, setOpen] = useState(false);
+
+  function crea(form: FormData) {
+    const casaId = String(form.get("casa") ?? "");
+    const trasfertaId = String(form.get("trasferta") ?? "");
+    if (!casaId || !trasfertaId || casaId === trasfertaId) {
+      toast.error("Seleziona due squadre diverse");
+      return;
+    }
+    const data = String(form.get("data") ?? "");
+    const ora = String(form.get("ora") ?? "15:00");
+    const nuova: Partita = {
+      id: `partita-${Date.now()}`,
+      stagioneId: "stagione-corrente",
+      giornata: Number(form.get("giornata") ?? 1),
+      dataOra: new Date(`${data}T${ora}:00`).toISOString(),
+      stato: "programmata",
+      squadraCasaId: casaId,
+      squadraTrasfertaId: trasfertaId,
+      golCasa: 0,
+      golTrasferta: 0,
+      arbitro: String(form.get("arbitro") ?? ""),
+      campo: String(form.get("campo") ?? "Campo Sportivo Santa Teresa"),
+      eventi: [],
+      galleryUrls: [],
+    };
+    setPartite((prev) => [...prev, nuova]);
+    toast.success("Partita aggiunta al calendario");
+    setOpen(false);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setOpen(true)} disabled={squadre.length < 2}>
+          <Plus className="size-4" /> Nuova partita
+        </Button>
+      </div>
+
+      {squadre.length < 2 && (
+        <p className="text-sm text-muted-foreground">Servono almeno due squadre per programmare una partita: aggiungile prima dalla sezione Squadre.</p>
+      )}
+
+      {partite.length === 0 ? (
+        <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessuna partita ancora in calendario.</div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl glass">
+          <table className="w-full min-w-[640px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="px-4 py-3">Giornata</th>
+                <th className="px-2 py-3">Data</th>
+                <th className="px-2 py-3">Sfida</th>
+                <th className="px-2 py-3 text-center">Risultato</th>
+                <th className="px-2 py-3 text-center">Stato</th>
+                <th className="px-4 py-3 text-right">Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...partite]
+                .sort((a, b) => a.giornata - b.giornata)
+                .map((p) => {
+                  const casa = getSquadraById(p.squadraCasaId);
+                  const trasferta = getSquadraById(p.squadraTrasfertaId);
+                  if (!casa || !trasferta) return null;
+                  return (
+                    <tr key={p.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
+                      <td className="px-4 py-3 font-semibold">G{p.giornata}</td>
+                      <td className="px-2 py-3 text-muted-foreground">
+                        {formatDateIt(p.dataOra)} · {formatTimeIt(p.dataOra)}
+                      </td>
+                      <td className="px-2 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <TeamCrest nome={casa.nome} colors={casa.coloriSociali} size={20} />
+                          <span className="text-xs font-semibold">{casa.nomeBreve}</span>
+                          <span className="text-muted-foreground">vs</span>
+                          <TeamCrest nome={trasferta.nome} colors={trasferta.coloriSociali} size={20} />
+                          <span className="text-xs font-semibold">{trasferta.nomeBreve}</span>
+                        </div>
+                      </td>
+                      <td className="px-2 py-3 text-center font-score font-bold tabular-nums">
+                        {p.stato === "programmata" ? "—" : `${p.golCasa}-${p.golTrasferta}`}
+                      </td>
+                      <td className="px-2 py-3 text-center">
+                        <Badge variant={p.stato === "live" ? "live" : p.stato === "conclusa" ? "muted" : "outline"} className="capitalize">
+                          {p.stato}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          href={`/admin/partite/${p.id}`}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold hover:bg-white/[0.1]"
+                        >
+                          <Settings2 className="size-3.5" /> Gestisci
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nuova partita</DialogTitle>
+          </DialogHeader>
+          <form action={(fd) => crea(fd)} className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="casa">Squadra in casa</Label>
+                <Select name="casa">
+                  <SelectTrigger id="casa">
+                    <SelectValue placeholder="Scegli" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {squadre.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nomeBreve}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="trasferta">Squadra ospite</Label>
+                <Select name="trasferta">
+                  <SelectTrigger id="trasferta">
+                    <SelectValue placeholder="Scegli" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {squadre.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nomeBreve}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="giornata">Giornata</Label>
+                <Input id="giornata" name="giornata" type="number" min={1} defaultValue={1} required />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="data">Data</Label>
+                <Input id="data" name="data" type="date" required />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="ora">Ora</Label>
+                <Input id="ora" name="ora" type="time" defaultValue="15:00" required />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="arbitro">Arbitro</Label>
+              <Input id="arbitro" name="arbitro" placeholder="Nome dell'arbitro designato" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="campo">Campo</Label>
+              <Input id="campo" name="campo" defaultValue="Campo Sportivo Santa Teresa" />
+            </div>
+            <Button type="submit" className="mt-1">
+              Aggiungi al calendario
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

@@ -1,4 +1,4 @@
-import { legaData, NOW } from "@/lib/mock";
+import { legaData } from "@/lib/mock";
 import type { Partita } from "@/lib/types";
 
 function isSameDay(a: Date, b: Date) {
@@ -15,7 +15,7 @@ export function getPartitaById(id: string): Partita | undefined {
 
 export function getPartiteDiOggi(): Partita[] {
   return getPartite()
-    .filter((p) => isSameDay(new Date(p.dataOra), NOW))
+    .filter((p) => isSameDay(new Date(p.dataOra), new Date()))
     .sort((a, b) => new Date(a.dataOra).getTime() - new Date(b.dataOra).getTime());
 }
 
@@ -48,7 +48,9 @@ export function getGiornataCorrente(): number {
   const oggi = getPartiteDiOggi();
   if (oggi.length) return oggi[0].giornata;
   const prossima = getProssimaPartita();
-  return prossima?.giornata ?? Math.max(...getPartite().map((p) => p.giornata));
+  if (prossima) return prossima.giornata;
+  const tutte = getPartite();
+  return tutte.length ? Math.max(...tutte.map((p) => p.giornata)) : 0;
 }
 
 export function getPartitaDellaSettimana(): Partita | undefined {

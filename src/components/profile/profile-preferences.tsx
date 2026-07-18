@@ -19,6 +19,20 @@ export function ProfilePreferences({ squadre, giocatori }: { squadre: Squadra[];
   const squadraSel = squadre.find((s) => s.id === squadraId);
   const giocatoreSel = giocatori.find((g) => g.id === giocatoreId);
 
+  if (squadre.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col gap-4 p-5">
+          <p className="text-sm text-muted-foreground">
+            Le squadre della Lega non sono ancora state configurate: potrai scegliere la tua squadra del cuore non
+            appena il campionato sarà pubblicato.
+          </p>
+          <ThemeToggle />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <Card>

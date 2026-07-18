@@ -27,10 +27,22 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (request.nextUrl.pathname.startsWith("/admin") && !user) {
-    const redirectUrl = new URL("/auth/login", request.url);
-    redirectUrl.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    if (!user) {
+      const redirectUrl = new URL("/auth/login", request.url);
+      redirectUrl.searchParams.set("next", request.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // L'unico ruolo autorizzato ad amministrare la piattaforma è "organizzatore",
+    // assegnato via app_metadata sull'utente Supabase (mai via password/segreti
+    // nel codice — vedi README per la procedura di creazione del Super Admin).
+    const ruolo = (user.app_metadata as { role?: string } | undefined)?.role;
+    if (ruolo !== "organizzatore") {
+      const redirectUrl = new URL("/", request.url);
+      redirectUrl.searchParams.set("accesso_negato", "1");
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   return response;

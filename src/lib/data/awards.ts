@@ -8,10 +8,6 @@ export function getMvpUltimaGiornata() {
   return legaData().premiSettimanali.find((p) => p.tipo === "mvp_giornata");
 }
 
-export function getAlboOro() {
-  return [...legaData().alboOro].sort((a, b) => b.stagioneId.localeCompare(a.stagioneId));
-}
-
 export function getStagioni() {
   return legaData().stagioni;
 }

@@ -16,8 +16,8 @@ import {
   getRigaClassifica,
   getUltimeCinquePartiteSquadra,
   getSponsorDellaSquadra,
-  getAlboOro,
 } from "@/lib/data";
+import { getTitoliPerSquadra } from "@/lib/data/storico";
 import { Calendar, MapPin, Shield, Trophy, Users } from "lucide-react";
 
 export function generateStaticParams() {
@@ -39,7 +39,7 @@ export default async function SquadraDetailPage({ params }: { params: Promise<{ 
   const riga = getRigaClassifica(squadra.id);
   const ultime = getUltimeCinquePartiteSquadra(squadra.id);
   const sponsor = getSponsorDellaSquadra(squadra.id);
-  const titoli = getAlboOro().filter((a) => a.squadraCampioneId === squadra.id);
+  const titoli = getTitoliPerSquadra().find((t) => t.squadra === squadra.nome || t.squadra === squadra.nomeBreve);
   const capitano = giocatori.find((g) => g.id === squadra.capitanoId);
 
   return (
@@ -50,13 +50,13 @@ export default async function SquadraDetailPage({ params }: { params: Promise<{ 
         <div className="relative flex flex-col items-center gap-4 px-6 py-10 text-center sm:flex-row sm:items-end sm:text-left">
           <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} size={100} />
           <div className="flex-1">
-            <div className="mb-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              {titoli.map((t) => (
-                <Badge key={t.stagioneId} variant="gold">
-                  <Trophy className="size-3" /> Campione {t.stagioneId.replace("-", "/")}
+            {titoli && (
+              <div className="mb-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                <Badge variant="gold">
+                  <Trophy className="size-3" /> {titoli.titoli}× Campione
                 </Badge>
-              ))}
-            </div>
+              </div>
+            )}
             <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-4xl">{squadra.nome}</h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{squadra.descrizione}</p>
             <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground sm:justify-start">
@@ -130,16 +130,20 @@ export default async function SquadraDetailPage({ params }: { params: Promise<{ 
 
           <section>
             <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Sponsor del club</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {sponsor.map((s) => (
-                <Card key={s.id}>
-                  <CardContent className="flex flex-col items-center gap-1.5 p-4 text-center">
-                    <span className="font-display text-sm font-bold">{s.nome}</span>
-                    <Badge variant={s.livello === "platinum" ? "gold" : "outline"}>{s.livello}</Badge>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {sponsor.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nessuno sponsor ancora associato a questo club.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {sponsor.map((s) => (
+                  <Card key={s.id}>
+                    <CardContent className="flex flex-col items-center gap-1.5 p-4 text-center">
+                      <span className="font-display text-sm font-bold">{s.nome}</span>
+                      <Badge variant={s.livello === "platinum" ? "gold" : "outline"}>{s.livello}</Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       </div>

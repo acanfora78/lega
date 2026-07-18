@@ -4,7 +4,7 @@ import { PitchBackdrop, StadiumLights } from "@/components/brand/pitch-art";
 import { LiveBadge } from "@/components/shared/live-badge";
 import { Countdown } from "@/components/shared/countdown";
 import { Badge } from "@/components/ui/badge";
-import { getGiocatoreById, getSquadraById } from "@/lib/data";
+import { getGiocatoreById, getSquadraById, getStagioneAttuale } from "@/lib/data";
 import { formatDateIt, formatTimeIt } from "@/lib/utils";
 import type { Partita } from "@/lib/types";
 import { MapPin, Star, Trophy } from "lucide-react";
@@ -15,6 +15,7 @@ export function MatchDetailHeader({ partita }: { partita: Partita }) {
   const isLive = partita.stato === "live" || partita.stato === "intervallo";
   const isConclusa = partita.stato === "conclusa";
   const isProgrammata = partita.stato === "programmata";
+  const stagione = getStagioneAttuale();
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">
@@ -23,7 +24,7 @@ export function MatchDetailHeader({ partita }: { partita: Partita }) {
       <div className="relative px-5 py-8 sm:px-10 sm:py-10">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2 rounded-full glass px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-gold-bright">
-            Giornata {partita.giornata} · Stagione 2025/2026
+            Giornata {partita.giornata} · Stagione {stagione.etichetta}
           </span>
           {isLive ? (
             <LiveBadge minuto={partita.minutoCorrente} className="text-sm" />

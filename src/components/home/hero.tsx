@@ -7,7 +7,7 @@ import { PitchBackdrop, StadiumLights } from "@/components/brand/pitch-art";
 import { Countdown } from "@/components/shared/countdown";
 import { LiveBadge } from "@/components/shared/live-badge";
 import { Button } from "@/components/ui/button";
-import { getSquadraById } from "@/lib/data";
+import { getSquadraById, getStagioneAttuale } from "@/lib/data";
 import { formatDateIt, formatTimeIt } from "@/lib/utils";
 import type { Partita } from "@/lib/types";
 import { CloudSun, MapPin, Radio } from "lucide-react";
@@ -15,6 +15,7 @@ import { CloudSun, MapPin, Radio } from "lucide-react";
 export function Hero({ partita, live }: { partita: Partita; live: boolean }) {
   const casa = getSquadraById(partita.squadraCasaId)!;
   const trasferta = getSquadraById(partita.squadraTrasfertaId)!;
+  const stagione = getStagioneAttuale();
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">
@@ -24,7 +25,7 @@ export function Hero({ partita, live }: { partita: Partita; live: boolean }) {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2 rounded-full glass px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-gold-bright">
             <Radio className="size-3.5" />
-            Giornata {partita.giornata} · Stagione 2025/2026
+            Giornata {partita.giornata} · Stagione {stagione.etichetta}
           </span>
           {live ? (
             <LiveBadge minuto={partita.minutoCorrente} className="text-sm" />

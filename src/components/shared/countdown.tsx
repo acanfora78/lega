@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { NOW } from "@/lib/mock/now";
 
 function diffParts(target: Date, from: Date) {
   const total = Math.max(0, target.getTime() - from.getTime());
@@ -14,16 +13,18 @@ function diffParts(target: Date, from: Date) {
 
 export function Countdown({ target, compact = false }: { target: string | Date; compact?: boolean }) {
   const targetDate = typeof target === "string" ? new Date(target) : target;
-  // L'orologio "reale" avanza rispetto al riferimento fisso NOW dell'app demo.
-  const [elapsedMs, setElapsedMs] = useState(0);
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    const start = Date.now();
-    const id = setInterval(() => setElapsedMs(Date.now() - start), 1000);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prima misurazione dell'orologio client, evita mismatch di idratazione
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const parts = diffParts(targetDate, new Date(NOW.getTime() + elapsedMs));
+  const parts = diffParts(targetDate, now ?? targetDate);
+
+  if (!now) return null;
 
   if (parts.total <= 0) {
     return <span className="font-score text-sm font-semibold text-primary-glow">In corso</span>;

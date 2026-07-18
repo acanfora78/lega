@@ -77,7 +77,7 @@ export default async function GiocatoreDetailPage({ params }: { params: Promise<
 
       {statoAttuale && (
         <section>
-          <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Stagione 2025/2026</h2>
+          <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Stagione {stagioneCorrente.etichetta}</h2>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {[
               { label: "Presenze", value: statoAttuale.presenze },

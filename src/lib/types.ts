@@ -235,6 +235,104 @@ export interface Notifica {
   creataIl: string;
 }
 
+// ---------------------------------------------------------------------------
+// ARCHIVIO STORICO REALE — Campionati Passati
+// Dati sorgente: export/CSV forniti dalla Lega. Alcune stagioni hanno dati
+// parziali (nomi censurati dalla fonte, liste marcatori troncate, anomalie
+// di classifica per sanzioni disciplinari): questi limiti sono preservati
+// nei campi `nota`/`incompleta` invece di essere nascosti, così l'admin può
+// correggerli dal pannello quando avrà le fonti complete.
+// ---------------------------------------------------------------------------
+
+export interface RigaClassificaStorica {
+  posizione: number;
+  squadra: string;
+  punti: number;
+  giocate: number;
+  vinte: number;
+  pareggiate?: number;
+  perse?: number;
+  golFatti?: number;
+  golSubiti?: number;
+  nota?: string;
+}
+
+export interface MarcatoreStorico {
+  posizione: number;
+  giocatore: string;
+  squadra: string;
+  gol: number;
+  nomeParziale?: boolean;
+  nota?: string;
+}
+
+export interface PremioStorico {
+  titolo: string;
+  assegnatario: string;
+  dettaglio?: string;
+}
+
+export interface CampionatoStorico {
+  id: string;
+  stagione: string; // "2025/2026"
+  nomeCompetizione: string;
+  vincitore?: string;
+  classificaFinale: RigaClassificaStorica[];
+  classificaIncompleta?: boolean;
+  marcatori: MarcatoreStorico[];
+  marcatoriIncompleti?: boolean;
+  mvp?: string;
+  premi?: PremioStorico[];
+  fairPlaySquadra?: string;
+  galleryUrls: string[];
+  note?: string;
+}
+
+// ---------------------------------------------------------------------------
+// COMPETIZIONI — motore generico (campionati, coppe, tornei, gironi)
+// Modello predisposto per il futuro "competition builder" lato admin.
+// ---------------------------------------------------------------------------
+
+export type TipoCompetizione = "campionato" | "coppa" | "torneo_eliminazione" | "gironi" | "gironi_piu_finale" | "personalizzata";
+export type FormatoIncontri = "andata_ritorno" | "girone_unico" | "eliminazione_diretta" | "misto";
+export type StatoCompetizione = "bozza" | "in_corso" | "conclusa" | "archiviata";
+
+export interface CriterioClassifica {
+  ordine: number;
+  criterio: "punti" | "differenza_reti" | "gol_fatti" | "scontri_diretti" | "fair_play" | "sorteggio";
+}
+
+export interface FaseCompetizione {
+  id: string;
+  nome: string; // "Girone A", "Quarti di finale", "Fase a gironi"
+  ordine: number;
+  formato: FormatoIncontri;
+  squadreIds: string[];
+}
+
+export interface Competizione {
+  id: string;
+  slug: string;
+  nome: string;
+  tipo: TipoCompetizione;
+  stagioneId: string;
+  logoUrl: string;
+  coloreSociale: string;
+  stato: StatoCompetizione;
+  formato: FormatoIncontri;
+  criteriClassifica: CriterioClassifica[];
+  fasi: FaseCompetizione[];
+  regolamento?: string;
+  squadreIscritteIds: string[];
+}
+
+export interface RigaClassificaDisciplina {
+  squadraId: string;
+  ammonizioni: number;
+  espulsioni: number;
+  puntiDisciplina: number; // 1 per ammonizione, 3 per espulsione (convenzione FIGC amatoriale)
+}
+
 export interface UtenteProfilo {
   id: string;
   nome: string;

@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MatchCard } from "@/components/match/match-card";
-import { NOW } from "@/lib/mock/now";
 import type { Partita, Squadra } from "@/lib/types";
 
 function isSameDay(a: Date, b: Date) {
@@ -19,7 +18,7 @@ export function PartiteExplorer({ partite, squadre }: { partite: Partita[]; squa
     [partite, squadraId]
   );
 
-  const oggi = filtrate.filter((p) => isSameDay(new Date(p.dataOra), NOW)).sort((a, b) => +new Date(a.dataOra) - +new Date(b.dataOra));
+  const oggi = filtrate.filter((p) => isSameDay(new Date(p.dataOra), new Date())).sort((a, b) => +new Date(a.dataOra) - +new Date(b.dataOra));
   const prossime = filtrate.filter((p) => p.stato === "programmata").sort((a, b) => +new Date(a.dataOra) - +new Date(b.dataOra));
   const concluse = filtrate.filter((p) => p.stato === "conclusa" || p.stato === "live" || p.stato === "intervallo").sort((a, b) => +new Date(b.dataOra) - +new Date(a.dataOra));
 
