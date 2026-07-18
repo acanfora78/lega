@@ -21,6 +21,6 @@ export async function POST(request: Request) {
     creataIl: new Date().toISOString(),
   };
 
-  inviaNotifica(notifica);
+  await inviaNotifica(notifica);
   return NextResponse.json(notifica, { status: 201 });
 }

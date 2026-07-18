@@ -6,7 +6,8 @@ import { getImpostazioni } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Impostazioni Lega" };
 
-export default function AdminImpostazioniPage() {
+export default async function AdminImpostazioniPage() {
+  const impostazioni = await getImpostazioni();
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div>
@@ -14,7 +15,7 @@ export default function AdminImpostazioniPage() {
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Impostazioni della Lega</h1>
       </div>
       <AdminShell>
-        <AdminImpostazioniForm impostazioni={getImpostazioni()} />
+        <AdminImpostazioniForm impostazioni={impostazioni} />
       </AdminShell>
     </Container>
   );

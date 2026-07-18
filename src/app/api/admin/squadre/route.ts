@@ -28,6 +28,6 @@ export async function POST(request: Request) {
     galleryUrls: [],
   };
 
-  creaSquadra(squadra);
+  await creaSquadra(squadra);
   return NextResponse.json(squadra, { status: 201 });
 }

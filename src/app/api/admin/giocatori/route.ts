@@ -37,6 +37,6 @@ export async function POST(request: Request) {
     trofei: [],
   };
 
-  creaGiocatore(giocatore);
+  await creaGiocatore(giocatore);
   return NextResponse.json(giocatore, { status: 201 });
 }

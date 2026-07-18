@@ -9,22 +9,25 @@ import { getArticoli, getArticoloBySlug, getSquadraById } from "@/lib/data";
 import { formatDateIt } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
-export function generateStaticParams() {
-  return getArticoli().map((a) => ({ slug: a.slug }));
+export async function generateStaticParams() {
+  return (await getArticoli()).map((a) => ({ slug: a.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const a = getArticoloBySlug(slug);
+  const a = await getArticoloBySlug(slug);
   return a ? { title: a.titolo, description: a.sommario } : {};
 }
 
 export default async function NewsDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const articolo = getArticoloBySlug(slug);
+  const articolo = await getArticoloBySlug(slug);
   if (!articolo) notFound();
 
-  const correlate = getArticoli().filter((a) => a.id !== articolo.id).slice(0, 3);
+  const correlate = (await getArticoli()).filter((a) => a.id !== articolo.id).slice(0, 3);
+  const squadreCorrelate = articolo.squadreCorrelate
+    ? (await Promise.all(articolo.squadreCorrelate.map((id) => getSquadraById(id)))).filter((s): s is NonNullable<typeof s> => Boolean(s))
+    : [];
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
@@ -48,17 +51,13 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ slu
         <div className="divider-fade h-px" />
         <p className="whitespace-pre-line leading-relaxed text-foreground/85">{articolo.contenuto}</p>
 
-        {articolo.squadreCorrelate && articolo.squadreCorrelate.length > 0 && (
+        {squadreCorrelate.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
-            {articolo.squadreCorrelate.map((id) => {
-              const s = getSquadraById(id);
-              if (!s) return null;
-              return (
-                <Link key={id} href={`/squadre/${s.slug}`}>
-                  <Badge variant="outline">{s.nomeBreve}</Badge>
-                </Link>
-              );
-            })}
+            {squadreCorrelate.map((s) => (
+              <Link key={s.id} href={`/squadre/${s.slug}`}>
+                <Badge variant="outline">{s.nomeBreve}</Badge>
+              </Link>
+            ))}
           </div>
         )}
       </article>

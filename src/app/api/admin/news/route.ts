@@ -25,6 +25,6 @@ export async function POST(request: Request) {
     in_evidenza: Boolean(body.in_evidenza),
   };
 
-  creaArticolo(articolo);
+  await creaArticolo(articolo);
   return NextResponse.json(articolo, { status: 201 });
 }

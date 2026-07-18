@@ -18,16 +18,18 @@ import { Users, UserCog, CalendarDays, Newspaper, Handshake, Radio, ArrowRight }
 
 export const metadata: Metadata = { title: "Dashboard Organizzatore" };
 
-export default function AdminDashboardPage() {
-  const squadre = getSquadre();
-  const giocatori = getGiocatori();
-  const partite = getPartite();
+export default async function AdminDashboardPage() {
+  const [squadre, giocatori, partite, live, prossima, articoli, sponsor, giornata] = await Promise.all([
+    getSquadre(),
+    getGiocatori(),
+    getPartite(),
+    getPartitaLive(),
+    getProssimaPartita(),
+    getArticoli(),
+    getSponsor(),
+    getGiornataCorrente(),
+  ]);
   const concluse = partite.filter((p) => p.stato === "conclusa").length;
-  const live = getPartitaLive();
-  const prossima = getProssimaPartita();
-  const articoli = getArticoli();
-  const sponsor = getSponsor();
-  const giornata = getGiornataCorrente();
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">

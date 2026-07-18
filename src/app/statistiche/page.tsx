@@ -16,8 +16,20 @@ import {
 
 export const metadata: Metadata = { title: "Statistiche" };
 
-export default function StatistichePage() {
-  const stagione = getStagioneAttuale();
+export default async function StatistichePage() {
+  const [stagione, marcatori, assist, portieri, cleanSheet, ammoniti, espulsi, presenze, mvp, squadre] = await Promise.all([
+    getStagioneAttuale(),
+    getClassificaMarcatori(20),
+    getClassificaAssist(20),
+    getMigliorPortiere(20),
+    getClassificaCleanSheet(20),
+    getClassificaAmmonizioni(20),
+    getClassificaEspulsioni(20),
+    getClassificaPresenze(20),
+    getClassificaMvp(20),
+    getSquadre(),
+  ]);
+
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div>
@@ -27,15 +39,15 @@ export default function StatistichePage() {
       </div>
 
       <StatisticheTabs
-        marcatori={getClassificaMarcatori(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.goal }))}
-        assist={getClassificaAssist(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.assist }))}
-        portieri={getMigliorPortiere(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.golSubiti ?? 0 }))}
-        cleanSheet={getClassificaCleanSheet(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.cleanSheet ?? 0 }))}
-        ammoniti={getClassificaAmmonizioni(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.ammonizioni }))}
-        espulsi={getClassificaEspulsioni(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.espulsioni }))}
-        presenze={getClassificaPresenze(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.presenze }))}
-        mvp={getClassificaMvp(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.mvp }))}
-        squadre={getSquadre()}
+        marcatori={marcatori.map((x) => ({ giocatore: x.giocatore, value: x.stat!.goal }))}
+        assist={assist.map((x) => ({ giocatore: x.giocatore, value: x.stat!.assist }))}
+        portieri={portieri.map((x) => ({ giocatore: x.giocatore, value: x.stat!.golSubiti ?? 0 }))}
+        cleanSheet={cleanSheet.map((x) => ({ giocatore: x.giocatore, value: x.stat!.cleanSheet ?? 0 }))}
+        ammoniti={ammoniti.map((x) => ({ giocatore: x.giocatore, value: x.stat!.ammonizioni }))}
+        espulsi={espulsi.map((x) => ({ giocatore: x.giocatore, value: x.stat!.espulsioni }))}
+        presenze={presenze.map((x) => ({ giocatore: x.giocatore, value: x.stat!.presenze }))}
+        mvp={mvp.map((x) => ({ giocatore: x.giocatore, value: x.stat!.mvp }))}
+        squadre={squadre}
       />
     </Container>
   );

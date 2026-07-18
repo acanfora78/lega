@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     giocatoreId: body.giocatoreId || undefined,
   };
 
-  const partita = aggiungiEventoPartita(id, evento);
+  const partita = await aggiungiEventoPartita(id, evento);
   if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });
   return NextResponse.json(partita, { status: 201 });
 }

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import type {
   AlbumMedia,
   Articolo,
@@ -16,18 +17,24 @@ import type {
 } from "@/lib/types";
 
 // ============================================================================
-// STORE REALE SU FILE (server-side)
+// STORE REALE (server-side)
 // ----------------------------------------------------------------------------
 // Nessuna "modalità demo": ogni azione dell'area organizzatore passa da qui e
-// scrive su disco (.data/league.json), quindi sopravvive a refresh, riavvii e
-// sessioni diverse. Adatto a qualsiasi hosting con filesystem persistente
-// (VPS, Docker, Railway, Render, Fly.io, `next start` su server proprio).
+// viene scritta realmente, quindi sopravvive a refresh, riavvii, sessioni e
+// utenti diversi. Due backend possibili, scelti in automatico:
 //
-// Su piattaforme serverless "pure" (Vercel/Netlify Functions) il filesystem è
-// effimero tra un'invocazione e l'altra: per quei target sostituire le
-// funzioni di questo file con query verso Supabase (schema già pronto in
-// supabase/schema.sql, client in src/lib/supabase/*) — la forma dei dati
-// resta identica, nessun altro file va toccato.
+//   1. Supabase (NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY
+//      impostate): l'intero stato della lega vive come un'unica riga JSONB
+//      nella tabella `lega_store` (vedi supabase/schema.sql). Funziona ovunque,
+//      incluse le funzioni serverless di Vercel/Netlify dove il filesystem
+//      è effimero/di sola lettura. Le scritture passano dalla sessione
+//      dell'utente autenticato (cookie), quindi restano protette dalla RLS
+//      `is_organizzatore()` già definita nello schema.
+//   2. File locale (`.data/league.json`): usato quando Supabase non è
+//      configurato, tipicamente in sviluppo o su hosting con disco
+//      persistente (VPS, Docker, Railway, Render, Fly.io). Se il filesystem
+//      risulta di sola lettura degrada a stato iniziale in memoria invece
+//      di far crashare il render della pagina.
 // ============================================================================
 
 export interface ImpostazioniLega {
@@ -65,6 +72,10 @@ export interface LegaData {
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "league.json");
+
+const isSupabaseConfigured = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 function stagioneCorrenteDefault(): Stagione {
   const oggi = new Date();
@@ -112,19 +123,47 @@ function statoIniziale(): LegaData {
   };
 }
 
+// ---------------------------------------------------------------------------
+// BACKEND SUPABASE — unica riga JSONB nella tabella lega_store
+// ---------------------------------------------------------------------------
+async function loadFromSupabase(): Promise<LegaData> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase.from("lega_store").select("data").eq("id", 1).maybeSingle();
+    if (error) throw error;
+    if (!data) return statoIniziale();
+    return { ...statoIniziale(), ...(data.data as Partial<LegaData>) };
+  } catch (err) {
+    console.warn("[store] Lettura da Supabase fallita, uso stato iniziale in memoria.", err);
+    return statoIniziale();
+  }
+}
+
+async function persistToSupabase(data: LegaData) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { error } = await supabase.from("lega_store").upsert({ id: 1, data, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  } catch (err) {
+    console.warn("[store] Scrittura su Supabase fallita.", err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// BACKEND FILE — .data/league.json (sviluppo o hosting con disco persistente)
+// ---------------------------------------------------------------------------
 // Nessuna cache in memoria: il modulo dello store viene istanziato separatamente
 // per ogni route/pagina compilata (Route Handler vs Server Component), quindi una
-// cache a livello di modulo non sarebbe condivisa tra le due copie e le scritture
-// di un endpoint admin non comparirebbero nelle pagine finché non si rilegge da
-// disco. Si legge quindi sempre il file per garantire uno stato coerente.
+// cache a livello di modulo non sarebbe condivisa tra le due copie. Si legge
+// quindi sempre il file per garantire uno stato coerente.
 //
-// Su filesystem in sola lettura (es. funzioni serverless di Vercel/Netlify, dove
-// solo /tmp è scrivibile) mkdir/writeFile falliscono: qui non deve mai far
-// crashare il render della pagina, quindi si degrada a stato iniziale in
-// memoria (nessuna persistenza) invece di lanciare un'eccezione non gestita.
+// Su filesystem in sola lettura (es. funzioni serverless senza Supabase
+// configurato) mkdir/writeFile falliscono: qui non deve mai far crashare il
+// render della pagina, quindi si degrada a stato iniziale in memoria (nessuna
+// persistenza) invece di lanciare un'eccezione non gestita.
 let filesystemScrivibile = true;
 
-function load(): LegaData {
+function loadFromFile(): LegaData {
   if (!filesystemScrivibile) return statoIniziale();
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -139,8 +178,7 @@ function load(): LegaData {
     if (isFilesystemReadOnly(err)) {
       filesystemScrivibile = false;
       console.warn(
-        "[file-store] Filesystem di sola lettura (tipico di hosting serverless come Vercel/Netlify): " +
-          "la persistenza reale richiede Supabase o un hosting con disco persistente. " +
+        "[store] Filesystem di sola lettura e Supabase non configurato: nessuna persistenza reale possibile. " +
           "Vedi il README, sezione 'Passare a Supabase in produzione'."
       );
     }
@@ -148,7 +186,7 @@ function load(): LegaData {
   }
 }
 
-function persist(data: LegaData) {
+function persistToFile(data: LegaData) {
   if (!filesystemScrivibile) return;
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -164,17 +202,28 @@ function isFilesystemReadOnly(err: unknown): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// SELEZIONE BACKEND
+// ---------------------------------------------------------------------------
+async function load(): Promise<LegaData> {
+  return isSupabaseConfigured ? loadFromSupabase() : loadFromFile();
+}
+
+async function persist(data: LegaData) {
+  return isSupabaseConfigured ? persistToSupabase(data) : persistToFile(data);
+}
+
+// ---------------------------------------------------------------------------
 // LETTURA
 // ---------------------------------------------------------------------------
-export function getStore(): LegaData {
+export async function getStore(): Promise<LegaData> {
   return load();
 }
 
 // ---------------------------------------------------------------------------
 // CLASSIFICA — ricalcolata automaticamente ad ogni scrittura di risultato
 // ---------------------------------------------------------------------------
-export function ricalcolaClassifica() {
-  const data = load();
+export async function ricalcolaClassifica() {
+  const data = await load();
   data.classifica = data.squadre.map((s) => {
     const concluse = data.partite.filter(
       (p) => p.stato === "conclusa" && (p.squadraCasaId === s.id || p.squadraTrasfertaId === s.id)
@@ -239,112 +288,112 @@ export function ricalcolaClassifica() {
 
   data.classifica.sort((a, b) => b.punti - a.punti || b.golFatti - b.golSubiti - (a.golFatti - a.golSubiti) || b.golFatti - a.golFatti);
   data.classifica.forEach((r, i) => (r.posizione = i + 1));
-  persist(data);
+  await persist(data);
 }
 
 // ---------------------------------------------------------------------------
 // SQUADRE
 // ---------------------------------------------------------------------------
-export function creaSquadra(squadra: Squadra) {
-  const data = load();
+export async function creaSquadra(squadra: Squadra) {
+  const data = await load();
   data.squadre.push(squadra);
-  persist(data);
-  ricalcolaClassifica();
+  await persist(data);
+  await ricalcolaClassifica();
   return squadra;
 }
 
-export function aggiornaSquadra(id: string, patch: Partial<Squadra>) {
-  const data = load();
+export async function aggiornaSquadra(id: string, patch: Partial<Squadra>) {
+  const data = await load();
   const idx = data.squadre.findIndex((s) => s.id === id);
   if (idx === -1) return undefined;
   data.squadre[idx] = { ...data.squadre[idx], ...patch };
-  persist(data);
+  await persist(data);
   return data.squadre[idx];
 }
 
-export function eliminaSquadra(id: string) {
-  const data = load();
+export async function eliminaSquadra(id: string) {
+  const data = await load();
   data.squadre = data.squadre.filter((s) => s.id !== id);
   data.giocatori = data.giocatori.filter((g) => g.squadraId !== id);
   data.partite = data.partite.filter((p) => p.squadraCasaId !== id && p.squadraTrasfertaId !== id);
-  persist(data);
-  ricalcolaClassifica();
+  await persist(data);
+  await ricalcolaClassifica();
 }
 
 // ---------------------------------------------------------------------------
 // GIOCATORI
 // ---------------------------------------------------------------------------
-export function creaGiocatore(giocatore: Giocatore) {
-  const data = load();
+export async function creaGiocatore(giocatore: Giocatore) {
+  const data = await load();
   data.giocatori.push(giocatore);
-  persist(data);
+  await persist(data);
   return giocatore;
 }
 
-export function aggiornaGiocatore(id: string, patch: Partial<Giocatore>) {
-  const data = load();
+export async function aggiornaGiocatore(id: string, patch: Partial<Giocatore>) {
+  const data = await load();
   const idx = data.giocatori.findIndex((g) => g.id === id);
   if (idx === -1) return undefined;
   data.giocatori[idx] = { ...data.giocatori[idx], ...patch };
-  persist(data);
+  await persist(data);
   return data.giocatori[idx];
 }
 
-export function eliminaGiocatore(id: string) {
-  const data = load();
+export async function eliminaGiocatore(id: string) {
+  const data = await load();
   data.giocatori = data.giocatori.filter((g) => g.id !== id);
-  persist(data);
+  await persist(data);
 }
 
 // ---------------------------------------------------------------------------
 // PARTITE
 // ---------------------------------------------------------------------------
-export function creaPartita(partita: Partita) {
-  const data = load();
+export async function creaPartita(partita: Partita) {
+  const data = await load();
   data.partite.push(partita);
-  persist(data);
+  await persist(data);
   return partita;
 }
 
-export function eliminaPartita(id: string) {
-  const data = load();
+export async function eliminaPartita(id: string) {
+  const data = await load();
   data.partite = data.partite.filter((p) => p.id !== id);
-  persist(data);
-  ricalcolaClassifica();
+  await persist(data);
+  await ricalcolaClassifica();
 }
 
-export function aggiornaStatoPartita(id: string, stato: StatoPartita) {
-  const data = load();
+export async function aggiornaStatoPartita(id: string, stato: StatoPartita) {
+  const data = await load();
   const partita = data.partite.find((p) => p.id === id);
   if (!partita) return undefined;
   partita.stato = stato;
-  persist(data);
-  if (stato === "conclusa") ricalcolaClassifica();
+  await persist(data);
+  if (stato === "conclusa") await ricalcolaClassifica();
   return partita;
 }
 
-export function aggiornaRisultatoPartita(id: string, golCasa: number, golTrasferta: number) {
-  const data = load();
+export async function aggiornaRisultatoPartita(id: string, golCasa: number, golTrasferta: number) {
+  const data = await load();
   const partita = data.partite.find((p) => p.id === id);
   if (!partita) return undefined;
   partita.golCasa = golCasa;
   partita.golTrasferta = golTrasferta;
-  persist(data);
-  if (partita.stato === "conclusa") ricalcolaClassifica();
+  await persist(data);
+  if (partita.stato === "conclusa") await ricalcolaClassifica();
   return partita;
 }
 
-export function impostaMvpPartita(id: string, giocatoreId: string) {
-  const data = load();
+export async function impostaMvpPartita(id: string, giocatoreId: string) {
+  const data = await load();
   const partita = data.partite.find((p) => p.id === id);
   if (!partita) return undefined;
   partita.mvpGiocatoreId = giocatoreId;
-  persist(data);
+  await persist(data);
   return partita;
 }
 
-export function aggiungiEventoPartita(id: string, evento: EventoPartita) {
-  const data = load();
+export async function aggiungiEventoPartita(id: string, evento: EventoPartita) {
+  const data = await load();
   const partita = data.partite.find((p) => p.id === id);
   if (!partita) return undefined;
   partita.eventi.push(evento);
@@ -352,83 +401,83 @@ export function aggiungiEventoPartita(id: string, evento: EventoPartita) {
     if (evento.squadraId === partita.squadraCasaId) partita.golCasa += 1;
     else if (evento.squadraId === partita.squadraTrasfertaId) partita.golTrasferta += 1;
   }
-  persist(data);
-  if (partita.stato === "conclusa") ricalcolaClassifica();
+  await persist(data);
+  if (partita.stato === "conclusa") await ricalcolaClassifica();
   return partita;
 }
 
 // ---------------------------------------------------------------------------
 // NEWS
 // ---------------------------------------------------------------------------
-export function creaArticolo(articolo: Articolo) {
-  const data = load();
+export async function creaArticolo(articolo: Articolo) {
+  const data = await load();
   data.articoli.unshift(articolo);
-  persist(data);
+  await persist(data);
   return articolo;
 }
 
-export function aggiornaArticolo(id: string, patch: Partial<Articolo>) {
-  const data = load();
+export async function aggiornaArticolo(id: string, patch: Partial<Articolo>) {
+  const data = await load();
   const idx = data.articoli.findIndex((a) => a.id === id);
   if (idx === -1) return undefined;
   data.articoli[idx] = { ...data.articoli[idx], ...patch };
-  persist(data);
+  await persist(data);
   return data.articoli[idx];
 }
 
-export function eliminaArticolo(id: string) {
-  const data = load();
+export async function eliminaArticolo(id: string) {
+  const data = await load();
   data.articoli = data.articoli.filter((a) => a.id !== id);
-  persist(data);
+  await persist(data);
 }
 
 // ---------------------------------------------------------------------------
 // SPONSOR
 // ---------------------------------------------------------------------------
-export function creaSponsor(sponsor: Sponsor) {
-  const data = load();
+export async function creaSponsor(sponsor: Sponsor) {
+  const data = await load();
   data.sponsor.unshift(sponsor);
-  persist(data);
+  await persist(data);
   return sponsor;
 }
 
-export function eliminaSponsor(id: string) {
-  const data = load();
+export async function eliminaSponsor(id: string) {
+  const data = await load();
   data.sponsor = data.sponsor.filter((s) => s.id !== id);
-  persist(data);
+  await persist(data);
 }
 
 // ---------------------------------------------------------------------------
 // MEDIA
 // ---------------------------------------------------------------------------
-export function creaAlbum(album: AlbumMedia) {
-  const data = load();
+export async function creaAlbum(album: AlbumMedia) {
+  const data = await load();
   data.albumMedia.unshift(album);
-  persist(data);
+  await persist(data);
   return album;
 }
 
-export function eliminaAlbum(id: string) {
-  const data = load();
+export async function eliminaAlbum(id: string) {
+  const data = await load();
   data.albumMedia = data.albumMedia.filter((a) => a.id !== id);
-  persist(data);
+  await persist(data);
 }
 
 // ---------------------------------------------------------------------------
 // NOTIFICHE
 // ---------------------------------------------------------------------------
-export function inviaNotifica(notifica: Notifica) {
-  const data = load();
+export async function inviaNotifica(notifica: Notifica) {
+  const data = await load();
   data.notifiche.unshift(notifica);
-  persist(data);
+  await persist(data);
   return notifica;
 }
 
 // ---------------------------------------------------------------------------
 // IMPOSTAZIONI
 // ---------------------------------------------------------------------------
-export function aggiornaImpostazioni(patch: Partial<ImpostazioniLega>) {
-  const data = load();
+export async function aggiornaImpostazioni(patch: Partial<ImpostazioniLega>) {
+  const data = await load();
   data.impostazioni = { ...data.impostazioni, ...patch, automazioni: { ...data.impostazioni.automazioni, ...patch.automazioni } };
   if (patch.stagioneEtichetta || patch.stagioneDataInizio || patch.stagioneDataFine) {
     const stagione = data.stagioni.find((s) => s.id === data.stagioneAttualeId);
@@ -438,6 +487,6 @@ export function aggiornaImpostazioni(patch: Partial<ImpostazioniLega>) {
       if (patch.stagioneDataFine) stagione.dataFine = patch.stagioneDataFine;
     }
   }
-  persist(data);
+  await persist(data);
   return data.impostazioni;
 }

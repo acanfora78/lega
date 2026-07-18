@@ -6,7 +6,18 @@ export async function updateSession(request: NextRequest) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return response;
+  if (!url || !anonKey) {
+    // Senza Supabase configurato non esiste autenticazione reale: l'area
+    // organizzatore va bloccata (fail closed) invece di lasciarla aperta a
+    // chiunque. Il resto del sito (sola lettura) continua a funzionare.
+    if (request.nextUrl.pathname.startsWith("/admin")) {
+      const redirectUrl = new URL("/auth/login", request.url);
+      redirectUrl.searchParams.set("next", request.nextUrl.pathname);
+      redirectUrl.searchParams.set("supabase_non_configurato", "1");
+      return NextResponse.redirect(redirectUrl);
+    }
+    return response;
+  }
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {

@@ -8,8 +8,8 @@ import { Images, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = { title: "Media Center" };
 
-export default function MediaPage() {
-  const album = getAlbum();
+export default async function MediaPage() {
+  const album = await getAlbum();
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">

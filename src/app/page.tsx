@@ -36,40 +36,51 @@ import {
 import { getCampionatiPassati } from "@/lib/data/storico";
 import { Trophy, Sparkles, ShieldCheck, Archive, ChevronRight } from "lucide-react";
 
-export default function HomePage() {
-  const live = getPartitaLive();
-  const prossima = getProssimaPartita();
-  const heroMatch = live ?? prossima;
-  const oggi = getPartiteDiOggi();
-  const risultati = getUltimiRisultati(4);
-  const classifica = getClassificaGenerale().slice(0, 5);
-  const marcatori = getClassificaMarcatori(5).map((x) => ({ giocatore: x.giocatore, value: x.stat!.goal }));
-  const assist = getClassificaAssist(5).map((x) => ({ giocatore: x.giocatore, value: x.stat!.assist }));
-  const news = getArticoliInEvidenza(3);
-  const mvp = getMvpUltimaGiornata();
-  const mvpGiocatore = mvp?.giocatoreId ? getGiocatoreById(mvp.giocatoreId) : undefined;
-  const mvpSquadra = mvpGiocatore ? getSquadraById(mvpGiocatore.squadraId) : undefined;
-  const giornata = getGiornataCorrente();
-  const album = getAlbum().slice(0, 4);
-  const squadre = getSquadre();
-  const sponsor = getSponsor();
+export default async function HomePage() {
+  const [live, prossima, oggi, risultati, classificaCompleta, marcatoriRaw, assistRaw, news, mvp, giornata, albumCompleto, squadre, sponsor] =
+    await Promise.all([
+      getPartitaLive(),
+      getProssimaPartita(),
+      getPartiteDiOggi(),
+      getUltimiRisultati(4),
+      getClassificaGenerale(),
+      getClassificaMarcatori(5),
+      getClassificaAssist(5),
+      getArticoliInEvidenza(3),
+      getMvpUltimaGiornata(),
+      getGiornataCorrente(),
+      getAlbum(),
+      getSquadre(),
+      getSponsor(),
+    ]);
   const campionatiPassati = getCampionatiPassati();
+
+  const heroMatch = live ?? prossima;
+  const classifica = classificaCompleta.slice(0, 5);
+  const marcatori = marcatoriRaw.map((x) => ({ giocatore: x.giocatore, value: x.stat!.goal }));
+  const assist = assistRaw.map((x) => ({ giocatore: x.giocatore, value: x.stat!.assist }));
+  const mvpGiocatore = mvp?.giocatoreId ? await getGiocatoreById(mvp.giocatoreId) : undefined;
+  const mvpSquadra = mvpGiocatore ? await getSquadraById(mvpGiocatore.squadraId) : undefined;
+  const album = albumCompleto.slice(0, 4);
+  const stagioneAttuale = await getStagioneAttuale();
 
   const stagioneAttivata = squadre.length > 0;
   const squadreMap = new Map(squadre.map((s) => [s.id, s]));
+  const heroCasa = heroMatch ? squadreMap.get(heroMatch.squadraCasaId) : undefined;
+  const heroTrasferta = heroMatch ? squadreMap.get(heroMatch.squadraTrasfertaId) : undefined;
 
   return (
     <Container className="flex flex-col gap-10 pt-6 sm:gap-14 sm:pt-10">
       <Suspense fallback={null}>
         <AccessDeniedNotice />
       </Suspense>
-      {heroMatch ? (
+      {heroMatch && heroCasa && heroTrasferta ? (
         <Hero
           partita={heroMatch}
           live={Boolean(live)}
-          casa={getSquadraById(heroMatch.squadraCasaId)!}
-          trasferta={getSquadraById(heroMatch.squadraTrasfertaId)!}
-          stagione={getStagioneAttuale()}
+          casa={heroCasa}
+          trasferta={heroTrasferta}
+          stagione={stagioneAttuale}
         />
       ) : (
         <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">

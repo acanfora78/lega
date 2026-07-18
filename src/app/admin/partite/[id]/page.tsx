@@ -5,28 +5,30 @@ import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminMatchControl } from "@/components/admin/admin-match-control";
 import { getPartite, getPartitaById, getSquadraById, getGiocatoriDellaSquadra } from "@/lib/data";
 
-export function generateStaticParams() {
-  return getPartite().map((p) => ({ id: p.id }));
+export async function generateStaticParams() {
+  return (await getPartite()).map((p) => ({ id: p.id }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const p = getPartitaById(id);
+  const p = await getPartitaById(id);
   if (!p) return {};
-  const casa = getSquadraById(p.squadraCasaId);
-  const trasferta = getSquadraById(p.squadraTrasfertaId);
+  const casa = await getSquadraById(p.squadraCasaId);
+  const trasferta = await getSquadraById(p.squadraTrasfertaId);
   return { title: `Gestisci: ${casa?.nomeBreve} vs ${trasferta?.nomeBreve}` };
 }
 
 export default async function AdminPartitaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const partita = getPartitaById(id);
+  const partita = await getPartitaById(id);
   if (!partita) notFound();
 
-  const casa = getSquadraById(partita.squadraCasaId)!;
-  const trasferta = getSquadraById(partita.squadraTrasfertaId)!;
-  const rosterCasa = getGiocatoriDellaSquadra(casa.id);
-  const rosterTrasferta = getGiocatoriDellaSquadra(trasferta.id);
+  const casa = (await getSquadraById(partita.squadraCasaId))!;
+  const trasferta = (await getSquadraById(partita.squadraTrasfertaId))!;
+  const [rosterCasa, rosterTrasferta] = await Promise.all([
+    getGiocatoriDellaSquadra(casa.id),
+    getGiocatoriDellaSquadra(trasferta.id),
+  ]);
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">

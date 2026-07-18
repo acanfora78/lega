@@ -10,8 +10,8 @@ function initialsMark(nome: string) {
     .toUpperCase();
 }
 
-export function SponsorBanner({ title = "I nostri sponsor" }: { title?: string }) {
-  const sponsor = getSponsor();
+export async function SponsorBanner({ title = "I nostri sponsor" }: { title?: string }) {
+  const sponsor = await getSponsor();
 
   return (
     <Card className="overflow-hidden p-5">

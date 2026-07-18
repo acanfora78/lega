@@ -19,6 +19,6 @@ export async function POST(request: Request) {
     descrizione: String(body.descrizione ?? ""),
   };
 
-  creaSponsor(sponsor);
+  await creaSponsor(sponsor);
   return NextResponse.json(sponsor, { status: 201 });
 }

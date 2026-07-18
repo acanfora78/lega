@@ -6,7 +6,8 @@ import { getAlbum } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Gestione Galleria" };
 
-export default function AdminMediaPage() {
+export default async function AdminMediaPage() {
+  const album = await getAlbum();
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div>
@@ -15,7 +16,7 @@ export default function AdminMediaPage() {
         <p className="mt-1 text-sm text-muted-foreground">Carica album fotografici, video e highlights della Lega.</p>
       </div>
       <AdminShell>
-        <AdminMediaGrid album={getAlbum()} />
+        <AdminMediaGrid album={album} />
       </AdminShell>
     </Container>
   );

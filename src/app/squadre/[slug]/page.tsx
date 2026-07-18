@@ -21,27 +21,34 @@ import {
 import { getTitoliPerSquadra } from "@/lib/data/storico";
 import { Calendar, MapPin, Shield, Trophy, Users } from "lucide-react";
 
-export function generateStaticParams() {
-  return getSquadre().map((s) => ({ slug: s.slug }));
+export async function generateStaticParams() {
+  return (await getSquadre()).map((s) => ({ slug: s.slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const squadra = getSquadraBySlug(slug);
+  const squadra = await getSquadraBySlug(slug);
   return squadra ? { title: squadra.nome } : {};
 }
 
 export default async function SquadraDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const squadra = getSquadraBySlug(slug);
+  const squadra = await getSquadraBySlug(slug);
   if (!squadra) notFound();
 
-  const giocatori = getGiocatoriDellaSquadra(squadra.id);
-  const riga = getRigaClassifica(squadra.id);
-  const ultime = getUltimeCinquePartiteSquadra(squadra.id);
-  const sponsor = getSponsorDellaSquadra(squadra.id);
+  const [giocatori, riga, ultime, sponsor] = await Promise.all([
+    getGiocatoriDellaSquadra(squadra.id),
+    getRigaClassifica(squadra.id),
+    getUltimeCinquePartiteSquadra(squadra.id),
+    getSponsorDellaSquadra(squadra.id),
+  ]);
   const titoli = getTitoliPerSquadra().find((t) => t.squadra === squadra.nome || t.squadra === squadra.nomeBreve);
   const capitano = giocatori.find((g) => g.id === squadra.capitanoId);
+  const squadreUltime = new Map(
+    await Promise.all(
+      ultime.flatMap((p) => [p.squadraCasaId, p.squadraTrasfertaId]).map(async (id) => [id, await getSquadraById(id)] as const)
+    )
+  );
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
@@ -125,8 +132,8 @@ export default async function SquadraDetailPage({ params }: { params: Promise<{ 
                 <MatchCard
                   key={p.id}
                   partita={p}
-                  casa={getSquadraById(p.squadraCasaId)!}
-                  trasferta={getSquadraById(p.squadraTrasfertaId)!}
+                  casa={squadreUltime.get(p.squadraCasaId)!}
+                  trasferta={squadreUltime.get(p.squadraTrasfertaId)!}
                 />
               )) : (
                 <p className="text-sm text-muted-foreground">Nessun risultato disponibile.</p>

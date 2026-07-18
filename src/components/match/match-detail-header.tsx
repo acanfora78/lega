@@ -9,13 +9,17 @@ import { formatDateIt, formatTimeIt } from "@/lib/utils";
 import type { Partita } from "@/lib/types";
 import { MapPin, Star, Trophy } from "lucide-react";
 
-export function MatchDetailHeader({ partita }: { partita: Partita }) {
-  const casa = getSquadraById(partita.squadraCasaId)!;
-  const trasferta = getSquadraById(partita.squadraTrasfertaId)!;
+export async function MatchDetailHeader({ partita }: { partita: Partita }) {
+  const [casa, trasferta, stagione, mvp] = await Promise.all([
+    getSquadraById(partita.squadraCasaId),
+    getSquadraById(partita.squadraTrasfertaId),
+    getStagioneAttuale(),
+    partita.mvpGiocatoreId ? getGiocatoreById(partita.mvpGiocatoreId) : Promise.resolve(undefined),
+  ]);
+  if (!casa || !trasferta) return null;
   const isLive = partita.stato === "live" || partita.stato === "intervallo";
   const isConclusa = partita.stato === "conclusa";
   const isProgrammata = partita.stato === "programmata";
-  const stagione = getStagioneAttuale();
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">
@@ -78,15 +82,12 @@ export function MatchDetailHeader({ partita }: { partita: Partita }) {
                 Partita della settimana
               </span>
             )}
-            {!isProgrammata && partita.mvpGiocatoreId && (() => {
-              const mvp = getGiocatoreById(partita.mvpGiocatoreId);
-              return mvp ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full glass px-3 py-1 text-xs font-semibold text-primary-glow">
-                  <Trophy className="size-3.5" />
-                  MVP: {mvp.nome} {mvp.cognome}
-                </span>
-              ) : null;
-            })()}
+            {!isProgrammata && mvp && (
+              <span className="inline-flex items-center gap-1.5 rounded-full glass px-3 py-1 text-xs font-semibold text-primary-glow">
+                <Trophy className="size-3.5" />
+                MVP: {mvp.nome} {mvp.cognome}
+              </span>
+            )}
           </div>
         )}
       </div>

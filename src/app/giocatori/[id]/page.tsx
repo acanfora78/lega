@@ -10,25 +10,28 @@ import { Badge } from "@/components/ui/badge";
 import { getGiocatori, getGiocatoreById, getSquadraById, getStagioneById, getStagioneAttuale } from "@/lib/data";
 import { Ruler, Weight, Footprints, Cake, Trophy, ShieldHalf } from "lucide-react";
 
-export function generateStaticParams() {
-  return getGiocatori().map((g) => ({ id: g.id }));
+export async function generateStaticParams() {
+  return (await getGiocatori()).map((g) => ({ id: g.id }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const g = getGiocatoreById(id);
+  const g = await getGiocatoreById(id);
   return g ? { title: `${g.nome} ${g.cognome}` } : {};
 }
 
 export default async function GiocatoreDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const giocatore = getGiocatoreById(id);
+  const giocatore = await getGiocatoreById(id);
   if (!giocatore) notFound();
 
-  const squadra = getSquadraById(giocatore.squadraId)!;
-  const stagioneCorrente = getStagioneAttuale();
+  const squadra = (await getSquadraById(giocatore.squadraId))!;
+  const stagioneCorrente = await getStagioneAttuale();
   const statoAttuale = giocatore.statistiche.find((s) => s.stagioneId === stagioneCorrente.id);
   const carriera = [...giocatore.statistiche].sort((a, b) => b.stagioneId.localeCompare(a.stagioneId));
+  const stagioniCarriera = new Map(
+    (await Promise.all(carriera.map((s) => getStagioneById(s.stagioneId)))).filter((s): s is NonNullable<typeof s> => Boolean(s)).map((s) => [s.id, s])
+  );
 
   const totali = giocatore.statistiche.reduce(
     (acc, s) => ({
@@ -121,7 +124,7 @@ export default async function GiocatoreDetailPage({ params }: { params: Promise<
               </thead>
               <tbody>
                 {carriera.map((s) => {
-                  const stagione = getStagioneById(s.stagioneId);
+                  const stagione = stagioniCarriera.get(s.stagioneId);
                   return (
                     <tr key={s.stagioneId} className="border-b border-border/60 last:border-0">
                       <td className="px-4 py-3 font-semibold">{stagione?.etichetta}</td>

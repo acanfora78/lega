@@ -6,8 +6,8 @@ import { legaData } from "@/lib/mock";
 
 const ORDINE_RUOLI: Ruolo[] = ["Portiere", "Difensore", "Centrocampista", "Attaccante"];
 
-export function TeamRoster({ giocatori, capitanoId, viceCapitanoId }: { giocatori: Giocatore[]; capitanoId?: string; viceCapitanoId?: string }) {
-  const stagioneId = legaData().stagioneAttualeId;
+export async function TeamRoster({ giocatori, capitanoId, viceCapitanoId }: { giocatori: Giocatore[]; capitanoId?: string; viceCapitanoId?: string }) {
+  const stagioneId = (await legaData()).stagioneAttualeId;
 
   return (
     <div className="flex flex-col gap-6">

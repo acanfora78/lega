@@ -6,7 +6,8 @@ import { getNotifiche } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Notifiche Push" };
 
-export default function AdminNotifichePage() {
+export default async function AdminNotifichePage() {
+  const notifiche = await getNotifiche();
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div>
@@ -15,7 +16,7 @@ export default function AdminNotifichePage() {
         <p className="mt-1 text-sm text-muted-foreground">Invia comunicazioni istantanee a tutti i tifosi della Lega.</p>
       </div>
       <AdminShell>
-        <AdminNotificheComposer notifiche={getNotifiche()} />
+        <AdminNotificheComposer notifiche={notifiche} />
       </AdminShell>
     </Container>
   );

@@ -6,8 +6,9 @@ import { getSquadre, getRigaClassifica } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Gestione Squadre" };
 
-export default function AdminSquadrePage() {
-  const squadre = getSquadre().map((s) => ({ squadra: s, riga: getRigaClassifica(s.id) }));
+export default async function AdminSquadrePage() {
+  const listaSquadre = await getSquadre();
+  const squadre = await Promise.all(listaSquadre.map(async (s) => ({ squadra: s, riga: await getRigaClassifica(s.id) })));
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">

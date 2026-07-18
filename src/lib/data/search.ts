@@ -8,10 +8,10 @@ export interface RisultatoRicerca {
   href: string;
 }
 
-export function ricercaGlobale(query: string): RisultatoRicerca[] {
+export async function ricercaGlobale(query: string): Promise<RisultatoRicerca[]> {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  const data = legaData();
+  const data = await legaData();
   const risultati: RisultatoRicerca[] = [];
 
   data.squadre

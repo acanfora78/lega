@@ -5,17 +5,18 @@ import { getSquadraById } from "@/lib/data";
 import type { Giocatore } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function TopList({
+export async function TopList({
   items,
   unit,
 }: {
   items: { giocatore: Giocatore; value: number }[];
   unit: string;
 }) {
+  const squadre = await Promise.all(items.map(({ giocatore }) => getSquadraById(giocatore.squadraId)));
   return (
     <div className="flex flex-col divide-y divide-border">
       {items.map(({ giocatore, value }, idx) => {
-        const squadra = getSquadraById(giocatore.squadraId);
+        const squadra = squadre[idx];
         return (
           <Link
             key={giocatore.id}

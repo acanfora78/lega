@@ -1,28 +1,29 @@
 import { legaData } from "@/lib/mock";
 import type { Articolo } from "@/lib/types";
 
-export function getArticoli(): Articolo[] {
-  return [...legaData().articoli].sort(
+export async function getArticoli(): Promise<Articolo[]> {
+  return [...(await legaData()).articoli].sort(
     (a, b) => new Date(b.pubblicatoIl).getTime() - new Date(a.pubblicatoIl).getTime()
   );
 }
 
-export function getArticoloBySlug(slug: string): Articolo | undefined {
-  return legaData().articoli.find((a) => a.slug === slug);
+export async function getArticoloBySlug(slug: string): Promise<Articolo | undefined> {
+  return (await legaData()).articoli.find((a) => a.slug === slug);
 }
 
-export function getArticoliInEvidenza(limit = 3): Articolo[] {
-  return getArticoli()
+export async function getArticoliInEvidenza(limit = 3): Promise<Articolo[]> {
+  const articoli = await getArticoli();
+  return articoli
     .filter((a) => a.in_evidenza)
     .slice(0, limit)
-    .concat(getArticoli().filter((a) => !a.in_evidenza))
+    .concat(articoli.filter((a) => !a.in_evidenza))
     .slice(0, limit);
 }
 
-export function getComunicati(): Articolo[] {
-  return getArticoli().filter((a) => a.categoria === "comunicato" || a.categoria === "disciplinare");
+export async function getComunicati(): Promise<Articolo[]> {
+  return (await getArticoli()).filter((a) => a.categoria === "comunicato" || a.categoria === "disciplinare");
 }
 
-export function getArticoliDellaSquadra(squadraId: string): Articolo[] {
-  return getArticoli().filter((a) => a.squadreCorrelate?.includes(squadraId));
+export async function getArticoliDellaSquadra(squadraId: string): Promise<Articolo[]> {
+  return (await getArticoli()).filter((a) => a.squadreCorrelate?.includes(squadraId));
 }

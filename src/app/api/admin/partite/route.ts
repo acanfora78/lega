@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
   const partita: Partita = {
     id: `partita-${Date.now()}`,
-    stagioneId: getStore().stagioneAttualeId,
+    stagioneId: (await getStore()).stagioneAttualeId,
     giornata: Number(body.giornata) || 1,
     dataOra: dataOra.toISOString(),
     stato: "programmata",
@@ -35,6 +35,6 @@ export async function POST(request: Request) {
     galleryUrls: [],
   };
 
-  creaPartita(partita);
+  await creaPartita(partita);
   return NextResponse.json(partita, { status: 201 });
 }

@@ -8,8 +8,8 @@ import { Newspaper, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = { title: "News" };
 
-export default function NewsPage() {
-  const articoli = getArticoli();
+export default async function NewsPage() {
+  const articoli = await getArticoli();
   const [primo, ...resto] = articoli;
 
   return (

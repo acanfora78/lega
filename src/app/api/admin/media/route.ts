@@ -18,6 +18,6 @@ export async function POST(request: Request) {
     itemsUrls: [{ url: "", tipo: body.tipo ?? "foto" }],
   };
 
-  creaAlbum(album);
+  await creaAlbum(album);
   return NextResponse.json(album, { status: 201 });
 }

@@ -7,6 +7,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status });
 
   const { id } = await params;
-  eliminaAlbum(id);
+  await eliminaAlbum(id);
   return NextResponse.json({ ok: true });
 }

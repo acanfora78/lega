@@ -6,7 +6,8 @@ import { getPartite, getSquadre } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Partite & Risultati" };
 
-export default function AdminPartitePage() {
+export default async function AdminPartitePage() {
+  const [partite, squadre] = await Promise.all([getPartite(), getSquadre()]);
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div>
@@ -15,7 +16,7 @@ export default function AdminPartitePage() {
         <p className="mt-1 text-sm text-muted-foreground">Gestisci calendario, formazioni, gol, cartellini e MVP di ogni sfida.</p>
       </div>
       <AdminShell>
-        <AdminPartiteTable partite={getPartite()} squadre={getSquadre()} />
+        <AdminPartiteTable partite={partite} squadre={squadre} />
       </AdminShell>
     </Container>
   );

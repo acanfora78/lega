@@ -11,29 +11,33 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getPartite, getPartitaById, getSquadraById, getGiocatoriDellaSquadra } from "@/lib/data";
 
-export function generateStaticParams() {
-  return getPartite().map((p) => ({ id: p.id }));
+export async function generateStaticParams() {
+  return (await getPartite()).map((p) => ({ id: p.id }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const partita = getPartitaById(id);
+  const partita = await getPartitaById(id);
   if (!partita) return {};
-  const casa = getSquadraById(partita.squadraCasaId);
-  const trasferta = getSquadraById(partita.squadraTrasfertaId);
+  const casa = await getSquadraById(partita.squadraCasaId);
+  const trasferta = await getSquadraById(partita.squadraTrasfertaId);
   return { title: `${casa?.nomeBreve} vs ${trasferta?.nomeBreve}` };
 }
 
 export default async function PartitaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const partita = getPartitaById(id);
+  const partita = await getPartitaById(id);
   if (!partita) notFound();
 
-  const casa = getSquadraById(partita.squadraCasaId)!;
-  const trasferta = getSquadraById(partita.squadraTrasfertaId)!;
+  const casa = (await getSquadraById(partita.squadraCasaId))!;
+  const trasferta = (await getSquadraById(partita.squadraTrasfertaId))!;
   const isLive = partita.stato === "live" || partita.stato === "intervallo";
   const haFormazioni = Boolean(partita.formazioneCasa && partita.formazioneTrasferta);
-  const giocatoriCoinvolti = [...getGiocatoriDellaSquadra(casa.id), ...getGiocatoriDellaSquadra(trasferta.id)];
+  const [giocatoriCasa, giocatoriTrasferta] = await Promise.all([
+    getGiocatoriDellaSquadra(casa.id),
+    getGiocatoriDellaSquadra(trasferta.id),
+  ]);
+  const giocatoriCoinvolti = [...giocatoriCasa, ...giocatoriTrasferta];
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">

@@ -6,7 +6,8 @@ import { getSponsor } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Gestione Sponsor" };
 
-export default function AdminSponsorPage() {
+export default async function AdminSponsorPage() {
+  const sponsor = await getSponsor();
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div>
@@ -14,7 +15,7 @@ export default function AdminSponsorPage() {
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Sponsor della Lega</h1>
       </div>
       <AdminShell>
-        <AdminSponsorGrid sponsor={getSponsor()} />
+        <AdminSponsorGrid sponsor={sponsor} />
       </AdminShell>
     </Container>
   );

@@ -8,9 +8,11 @@ import { ShieldCheck, Users } from "lucide-react";
 
 export const metadata: Metadata = { title: "Squadre" };
 
-export default function SquadrePage() {
-  const squadre = getSquadre();
-  const stagione = getStagioneAttuale();
+export default async function SquadrePage() {
+  const [squadre, stagione] = await Promise.all([getSquadre(), getStagioneAttuale()]);
+  const righeClassifica = new Map(
+    await Promise.all(squadre.map(async (s) => [s.id, await getRigaClassifica(s.id)] as const))
+  );
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
@@ -36,7 +38,7 @@ export default function SquadrePage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {squadre.map((s) => (
-            <TeamCard key={s.id} squadra={s} riga={getRigaClassifica(s.id)} />
+            <TeamCard key={s.id} squadra={s} riga={righeClassifica.get(s.id)} />
           ))}
         </div>
       )}

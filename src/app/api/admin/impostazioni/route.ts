@@ -7,6 +7,6 @@ export async function PATCH(request: Request) {
   if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status });
 
   const patch = await request.json();
-  const impostazioni = aggiornaImpostazioni(patch);
+  const impostazioni = await aggiornaImpostazioni(patch);
   return NextResponse.json(impostazioni);
 }

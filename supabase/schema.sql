@@ -609,3 +609,26 @@ create policy "push_sub_proprio" on push_subscriptions for all using (auth.uid()
 -- REALTIME — pubblica gli aggiornamenti live della Match Center
 -- ============================================================================
 alter publication supabase_realtime add table partite, partite_eventi, partite_statistiche, partite_chat, classifica, notifiche;
+
+-- ============================================================================
+-- LEGA_STORE — stato applicativo come singola riga JSONB
+-- ----------------------------------------------------------------------------
+-- Ponte pragmatico: l'app usa già un modello dati in-process (src/lib/types.ts)
+-- gestito da src/lib/store/file-store.ts. Invece di normalizzare subito ogni
+-- lettura/scrittura sulle tabelle relazionali sopra (roadmap futura), questa
+-- tabella conserva l'intero stato ("squadre", "giocatori", "partite", ecc.)
+-- come un unico blob JSONB, così l'app ottiene persistenza reale multi-sessione
+-- anche su hosting serverless (Vercel/Netlify, dove il filesystem è di sola
+-- lettura) senza dover riscrivere il data layer. Le tabelle relazionali sopra
+-- restano lo schema di riferimento per una futura migrazione completa.
+-- ============================================================================
+create table if not exists lega_store (
+  id int primary key default 1,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  constraint lega_store_singleton check (id = 1)
+);
+
+alter table lega_store enable row level security;
+create policy "lega_store_lettura_pubblica" on lega_store for select using (true);
+create policy "lega_store_scrittura_organizzatore" on lega_store for all using (is_organizzatore()) with check (is_organizzatore());

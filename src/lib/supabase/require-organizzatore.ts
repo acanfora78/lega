@@ -2,13 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 
 /**
  * Verifica che la richiesta provenga da un utente con ruolo "organizzatore".
- * Se Supabase non è configurato in questo ambiente, consente l'operazione
- * (coerente con il resto dell'app in modalità locale/sviluppo) — appena le
- * variabili Supabase sono impostate, il controllo diventa reale e vincolante.
+ * Se Supabase non è configurato in questo ambiente, l'accesso viene negato
+ * (fail closed): senza autenticazione reale non c'è modo di distinguere un
+ * organizzatore da un visitatore qualunque, quindi l'area admin va tenuta
+ * bloccata finché NEXT_PUBLIC_SUPABASE_URL/ANON_KEY non sono impostate.
  */
 export async function requireOrganizzatore(): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    return { ok: true };
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return { ok: false, status: 503, message: "Autenticazione non configurata: imposta le variabili Supabase per abilitare l'area organizzatore." };
   }
 
   try {

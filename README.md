@@ -18,7 +18,12 @@ La piattaforma parte **pulita**: nessuna squadra, giocatore, partita, news o spo
 
 L'unico contenuto precaricato è l'**archivio storico reale** (`src/lib/data/storico.ts`): le classifiche finali e le classifiche marcatori delle stagioni 2022/2023, 2023/2024 e 2025/2026, trascritte dagli export ufficiali forniti dalla Lega. Alcune fonti sono parziali (cognomi censurati, liste marcatori troncate, un'anomalia di punteggio nella stagione 2025/2026): questi limiti sono segnalati in chiaro nell'interfaccia (badge, tooltip, note) invece di essere nascosti, così l'area organizzatore può correggerli quando avrà le fonti complete.
 
-**Nessuna modalità demo**: ogni azione dell'area organizzatore (crea/modifica/elimina squadra, giocatore, partita, gol, cartellino, MVP, news, sponsor, album, notifica, impostazioni) passa da Route Handler dedicati sotto `src/app/api/admin/*`, che scrivono realmente nello store server-side (`src/lib/store/file-store.ts`). Di default questo store è **basato su file** (`.data/league.json`, escluso dal repository via `.gitignore`): sopravvive a refresh, riavvii del processo e sessioni/utenti diversi, perché legge e scrive sempre da disco (nessuna cache in memoria). Funziona su qualunque hosting con filesystem persistente (VPS, Docker, Railway, Render, Fly.io, `next start` su server proprio). Su piattaforme serverless "pure" (Vercel/Netlify Functions), dove il filesystem è effimero tra un'invocazione e l'altra, va sostituito con Supabase seguendo la sezione successiva — la forma dei dati resta identica, va toccato solo `src/lib/store/file-store.ts`.
+**Nessuna modalità demo**: ogni azione dell'area organizzatore (crea/modifica/elimina squadra, giocatore, partita, gol, cartellino, MVP, news, sponsor, album, notifica, impostazioni) passa da Route Handler dedicati sotto `src/app/api/admin/*`, che scrivono realmente nello store server-side (`src/lib/store/file-store.ts`). Il backend è scelto in automatico:
+
+- **Supabase configurato** (`NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY` impostate): lo stato vive come riga JSONB nella tabella `lega_store`, protetta da RLS (scrittura riservata a `is_organizzatore()`). Funziona ovunque, incluse le funzioni serverless di Vercel/Netlify. **Obbligatorio per deploy serverless** — vedi la sezione dedicata sotto.
+- **Nessun Supabase configurato**: fallback su file (`.data/league.json`, escluso dal repository via `.gitignore`), utile in sviluppo locale o su hosting con disco persistente (VPS, Docker, Railway, Render, Fly.io). In questo caso l'area organizzatore resta **bloccata** (fail closed, vedi sotto) perché senza Supabase non esiste autenticazione reale.
+
+In entrambi i casi lo store non tiene cache in memoria tra una richiesta e l'altra: legge sempre lo stato aggiornato.
 
 ## Avvio rapido
 
@@ -29,11 +34,22 @@ npm run dev
 
 Apri [http://localhost:3000](http://localhost:3000). L'app funziona subito, con l'archivio storico reale già consultabile in **Campionati Passati** e **Hall of Fame**, e il resto della piattaforma pronto per essere popolato da `/admin`.
 
-## Passare a Supabase in produzione
+## Deploy su Vercel/Netlify (serverless) — richiede Supabase
 
-1. Crea un progetto su [supabase.com](https://supabase.com) ed esegui `supabase/schema.sql` nel SQL editor: crea tutte le tabelle, i trigger di automazione (ricalcolo classifica, statistiche giocatore, notifiche sui gol) e le policy di Row Level Security.
-2. Copia `.env.example` in `.env.local` e compila le variabili (URL/anon key Supabase, chiavi VAPID per le notifiche push, chiave OpenWeather opzionale).
-3. Sostituisci le funzioni in `src/lib/store/file-store.ts` (oggi lette/scritte su `.data/league.json`) con query verso `src/lib/supabase/client.ts` / `server.ts`: la forma dei dati restituiti (vedi `src/lib/types.ts`) è già identica allo schema Postgres, quindi lo switch non richiede modifiche né ai componenti né alle route `src/app/api/admin/*`.
+Il filesystem delle funzioni serverless (Vercel, Netlify Functions) è di sola lettura: senza Supabase configurato l'app resta comunque online (nessun crash), ma **l'area organizzatore è disabilitata** (blocco automatico, vedi sotto) perché non c'è modo di autenticare in modo sicuro chi può scrivere.
+
+1. Crea un progetto su [supabase.com](https://supabase.com) (piano gratuito sufficiente).
+2. **SQL Editor** → incolla ed esegui tutto `supabase/schema.sql`. Crea sia lo schema relazionale completo (roadmap futura) sia la tabella `lega_store`, che è quella realmente usata oggi: un'unica riga JSONB con l'intero stato della lega, così l'app ottiene persistenza reale multi-sessione senza dover riscrivere il data layer (vedi commento nello schema per i dettagli).
+3. **Settings → API** → copia **Project URL** e **anon public key** (sono sicure da esporre lato client, non vanno mai confuse con la `service_role` key).
+4. Imposta su Vercel/Netlify (Project Settings → Environment Variables) — e in locale in `.env.local` copiando `.env.example`:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+   ```
+5. Ridispiega. Da questo momento `getStore()`/i Route Handler in `src/app/api/admin/*` scrivono su Supabase invece che su `.data/league.json` — vedi `src/lib/store/file-store.ts`, che sceglie il backend in automatico in base a queste variabili.
+6. Crea il Super Admin (procedura sotto) per poter accedere a `/admin`.
+
+**Fail closed:** finché `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY` non sono impostate, `/admin` reindirizza al login e ogni endpoint `/api/admin/*` risponde `503` — non esiste una "modalità aperta a tutti" di ripiego (vedi `src/lib/supabase/middleware.ts` e `src/lib/supabase/require-organizzatore.ts`).
 
 ### Creare il Super Admin (sicuro, nessuna password nel codice)
 

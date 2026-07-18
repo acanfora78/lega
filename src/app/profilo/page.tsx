@@ -9,9 +9,8 @@ import { User, LogIn, Bell, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = { title: "Profilo" };
 
-export default function ProfiloPage() {
-  const squadre = getSquadre();
-  const giocatori = getGiocatori();
+export default async function ProfiloPage() {
+  const [squadre, giocatori] = await Promise.all([getSquadre(), getGiocatori()]);
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">

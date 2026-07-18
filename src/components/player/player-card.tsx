@@ -4,7 +4,7 @@ import { getSquadraById } from "@/lib/data";
 import type { Giocatore } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export function PlayerCard({
+export async function PlayerCard({
   giocatore,
   statLabel,
   statValue,
@@ -17,7 +17,7 @@ export function PlayerCard({
   showTeam?: boolean;
   className?: string;
 }) {
-  const squadra = getSquadraById(giocatore.squadraId);
+  const squadra = await getSquadraById(giocatore.squadraId);
 
   return (
     <Link

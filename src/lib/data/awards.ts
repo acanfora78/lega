@@ -1,29 +1,30 @@
 import { legaData } from "@/lib/mock";
 
-export function getPremiSettimanali() {
-  return legaData().premiSettimanali;
+export async function getPremiSettimanali() {
+  return (await legaData()).premiSettimanali;
 }
 
-export function getMvpUltimaGiornata() {
-  return legaData().premiSettimanali.find((p) => p.tipo === "mvp_giornata");
+export async function getMvpUltimaGiornata() {
+  return (await legaData()).premiSettimanali.find((p) => p.tipo === "mvp_giornata");
 }
 
-export function getStagioni() {
-  return legaData().stagioni;
+export async function getStagioni() {
+  return (await legaData()).stagioni;
 }
 
-export function getStagioneAttuale() {
-  return legaData().stagioni.find((s) => s.attuale)!;
+export async function getStagioneAttuale() {
+  return (await legaData()).stagioni.find((s) => s.attuale)!;
 }
 
-export function getStagioneById(id: string) {
-  return legaData().stagioni.find((s) => s.id === id);
+export async function getStagioneById(id: string) {
+  return (await legaData()).stagioni.find((s) => s.id === id);
 }
 
-export function getNotifiche() {
-  return [...legaData().notifiche].sort((a, b) => new Date(b.creataIl).getTime() - new Date(a.creataIl).getTime());
+export async function getNotifiche() {
+  const { notifiche } = await legaData();
+  return [...notifiche].sort((a, b) => new Date(b.creataIl).getTime() - new Date(a.creataIl).getTime());
 }
 
-export function getImpostazioni() {
-  return legaData().impostazioni;
+export async function getImpostazioni() {
+  return (await legaData()).impostazioni;
 }

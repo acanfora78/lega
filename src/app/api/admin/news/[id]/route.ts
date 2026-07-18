@@ -8,7 +8,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const patch = await request.json();
-  const aggiornato = aggiornaArticolo(id, patch);
+  const aggiornato = await aggiornaArticolo(id, patch);
   if (!aggiornato) return NextResponse.json({ error: "Articolo non trovato." }, { status: 404 });
   return NextResponse.json(aggiornato);
 }
@@ -18,6 +18,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status });
 
   const { id } = await params;
-  eliminaArticolo(id);
+  await eliminaArticolo(id);
   return NextResponse.json({ ok: true });
 }

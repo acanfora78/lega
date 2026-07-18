@@ -5,9 +5,8 @@ import { getPartite, getSquadre } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Partite" };
 
-export default function PartitePage() {
-  const partite = getPartite();
-  const squadre = getSquadre();
+export default async function PartitePage() {
+  const [partite, squadre] = await Promise.all([getPartite(), getSquadre()]);
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">

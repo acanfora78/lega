@@ -8,7 +8,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const patch = await request.json();
-  const aggiornata = aggiornaSquadra(id, patch);
+  const aggiornata = await aggiornaSquadra(id, patch);
   if (!aggiornata) return NextResponse.json({ error: "Squadra non trovata." }, { status: 404 });
   return NextResponse.json(aggiornata);
 }
@@ -18,6 +18,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status });
 
   const { id } = await params;
-  eliminaSquadra(id);
+  await eliminaSquadra(id);
   return NextResponse.json({ ok: true });
 }

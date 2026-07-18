@@ -4,8 +4,8 @@ import type { FormazioneVoce, Squadra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Square, LogOut } from "lucide-react";
 
-function VoceRiga({ voce }: { voce: FormazioneVoce }) {
-  const giocatore = getGiocatoreById(voce.giocatoreId);
+async function VoceRiga({ voce }: { voce: FormazioneVoce }) {
+  const giocatore = await getGiocatoreById(voce.giocatoreId);
   if (!giocatore) return null;
   return (
     <div className="flex items-center gap-2.5 py-1.5">

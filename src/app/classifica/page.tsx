@@ -18,9 +18,17 @@ import { Trophy, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = { title: "Classifica" };
 
-export default function ClassificaPage() {
-  const generale = getClassificaGenerale();
-  const stagione = getStagioneAttuale();
+export default async function ClassificaPage() {
+  const [generale, stagione, casa, trasferta, attacco, difesa, fairPlay, squadre] = await Promise.all([
+    getClassificaGenerale(),
+    getStagioneAttuale(),
+    getClassificaCasa(),
+    getClassificaTrasferta(),
+    getMigliorAttacco(),
+    getMigliorDifesa(),
+    getClassificaFairPlay(),
+    getSquadre(),
+  ]);
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
@@ -60,12 +68,12 @@ export default function ClassificaPage() {
 
           <ClassificaTabs
             generale={generale}
-            casa={getClassificaCasa()}
-            trasferta={getClassificaTrasferta()}
-            attacco={getMigliorAttacco()}
-            difesa={getMigliorDifesa()}
-            fairPlay={getClassificaFairPlay()}
-            squadre={getSquadre()}
+            casa={casa}
+            trasferta={trasferta}
+            attacco={attacco}
+            difesa={difesa}
+            fairPlay={fairPlay}
+            squadre={squadre}
           />
         </>
       )}

@@ -6,7 +6,8 @@ import { getGiocatori, getSquadre, getStagioneAttuale } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Gestione Giocatori" };
 
-export default function AdminGiocatoriPage() {
+export default async function AdminGiocatoriPage() {
+  const [giocatori, squadre, stagione] = await Promise.all([getGiocatori(), getSquadre(), getStagioneAttuale()]);
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div>
@@ -14,7 +15,7 @@ export default function AdminGiocatoriPage() {
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Gestione Giocatori</h1>
       </div>
       <AdminShell>
-        <AdminGiocatoriTable giocatori={getGiocatori()} squadre={getSquadre()} stagioneId={getStagioneAttuale().id} />
+        <AdminGiocatoriTable giocatori={giocatori} squadre={squadre} stagioneId={stagione.id} />
       </AdminShell>
     </Container>
   );
