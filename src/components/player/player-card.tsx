@@ -23,7 +23,7 @@ export function PlayerCard({
     <Link
       href={`/giocatori/${giocatore.id}`}
       className={cn(
-        "group flex items-center gap-3 rounded-2xl glass p-3.5 transition-all duration-300 hover:border-primary-glow/30 hover:bg-white/[0.05]",
+        "group flex items-center gap-3 rounded-2xl glass card-luxury p-3.5 transition-all duration-300 hover:border-primary-glow/30 hover:bg-white/[0.05]",
         className
       )}
     >

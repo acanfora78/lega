@@ -27,6 +27,7 @@ export default async function CampionatoPassatoDetailPage({ params }: { params: 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">
+        <div className="bg-aurora absolute inset-0 opacity-50 mix-blend-screen" />
         <PitchBackdrop />
         <div className="relative flex flex-col items-center gap-3 px-6 py-12 text-center">
           <Badge variant="gold">Stagione {campionato.stagione}</Badge>

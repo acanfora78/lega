@@ -31,6 +31,7 @@ import {
   getAlbum,
   getSquadre,
   getSponsor,
+  getStagioneAttuale,
 } from "@/lib/data";
 import { getCampionatiPassati } from "@/lib/data/storico";
 import { Trophy, Sparkles, ShieldCheck, Archive, ChevronRight } from "lucide-react";
@@ -55,6 +56,7 @@ export default function HomePage() {
   const campionatiPassati = getCampionatiPassati();
 
   const stagioneAttivata = squadre.length > 0;
+  const squadreMap = new Map(squadre.map((s) => [s.id, s]));
 
   return (
     <Container className="flex flex-col gap-10 pt-6 sm:gap-14 sm:pt-10">
@@ -62,7 +64,13 @@ export default function HomePage() {
         <AccessDeniedNotice />
       </Suspense>
       {heroMatch ? (
-        <Hero partita={heroMatch} live={Boolean(live)} />
+        <Hero
+          partita={heroMatch}
+          live={Boolean(live)}
+          casa={getSquadraById(heroMatch.squadraCasaId)!}
+          trasferta={getSquadraById(heroMatch.squadraTrasfertaId)!}
+          stagione={getStagioneAttuale()}
+        />
       ) : (
         <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">
           <PitchBackdrop />
@@ -102,7 +110,7 @@ export default function HomePage() {
           <SectionHeader eyebrow={`Giornata ${giornata}`} title="Partite di oggi" href="/partite" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {oggi.map((p) => (
-              <MatchCard key={p.id} partita={p} />
+              <MatchCard key={p.id} partita={p} casa={squadreMap.get(p.squadraCasaId)!} trasferta={squadreMap.get(p.squadraTrasfertaId)!} />
             ))}
           </div>
         </section>
@@ -113,7 +121,7 @@ export default function HomePage() {
           <SectionHeader eyebrow="Ultima giornata" title="Ultimi risultati" href="/partite" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {risultati.map((p) => (
-              <MatchCard key={p.id} partita={p} />
+              <MatchCard key={p.id} partita={p} casa={squadreMap.get(p.squadraCasaId)!} trasferta={squadreMap.get(p.squadraTrasfertaId)!} />
             ))}
           </div>
         </section>
@@ -124,7 +132,7 @@ export default function HomePage() {
           {classifica.length > 0 && (
             <section className="lg:col-span-2">
               <SectionHeader eyebrow="Stagione in corso" title="Classifica" href="/classifica" />
-              <StandingsTable righe={classifica} compact />
+              <StandingsTable righe={classifica} squadre={squadre} compact />
             </section>
           )}
 

@@ -1,6 +1,5 @@
 import { TeamCrest } from "@/components/brand/team-crest";
-import { getGiocatoreById, getSquadraById } from "@/lib/data";
-import type { EventoPartita, Partita } from "@/lib/types";
+import type { EventoPartita, Giocatore, Partita, Squadra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeftRight,
@@ -34,7 +33,19 @@ const EVENTO_META: Record<
   mvp: { icon: Trophy, label: "MVP", color: "text-gold-bright" },
 };
 
-export function MatchTimeline({ partita }: { partita: Partita }) {
+export function MatchTimeline({
+  partita,
+  squadre,
+  giocatori,
+}: {
+  partita: Partita;
+  /** Squadre coinvolte (casa + trasferta), per stemma/nome nella cronaca. */
+  squadre: Squadra[];
+  /** Rose delle due squadre, per nome/numero dei protagonisti degli eventi. */
+  giocatori: Giocatore[];
+}) {
+  const squadreMap = new Map(squadre.map((s) => [s.id, s]));
+  const giocatoriMap = new Map(giocatori.map((g) => [g.id, g]));
   const eventiOrdinati = [...partita.eventi].sort((a, b) => b.minuto - a.minuto || (b.minutoRecupero ?? 0) - (a.minutoRecupero ?? 0));
 
   if (eventiOrdinati.length === 0) {
@@ -51,10 +62,10 @@ export function MatchTimeline({ partita }: { partita: Partita }) {
       {eventiOrdinati.map((e) => {
         const meta = EVENTO_META[e.tipo];
         const Icon = meta.icon;
-        const squadraEvento = getSquadraById(e.squadraId);
-        const giocatore = e.giocatoreId ? getGiocatoreById(e.giocatoreId) : undefined;
-        const assist = e.assistGiocatoreId ? getGiocatoreById(e.assistGiocatoreId) : undefined;
-        const entrata = e.giocatoreEntrataId ? getGiocatoreById(e.giocatoreEntrataId) : undefined;
+        const squadraEvento = squadreMap.get(e.squadraId);
+        const giocatore = e.giocatoreId ? giocatoriMap.get(e.giocatoreId) : undefined;
+        const assist = e.assistGiocatoreId ? giocatoriMap.get(e.assistGiocatoreId) : undefined;
+        const entrata = e.giocatoreEntrataId ? giocatoriMap.get(e.giocatoreEntrataId) : undefined;
         const isGoal = e.tipo === "goal" || e.tipo === "rigore_segnato" || e.tipo === "autogoal";
 
         return (

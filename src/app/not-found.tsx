@@ -8,6 +8,7 @@ export default function NotFound() {
   return (
     <Container className="pt-6 sm:pt-10">
       <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">
+        <div className="bg-aurora absolute inset-0 opacity-50 mix-blend-screen" />
         <PitchBackdrop />
         <StadiumLights />
         <div className="relative flex flex-col items-center gap-4 px-6 py-20 text-center">

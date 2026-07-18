@@ -12,11 +12,13 @@ L'app ufficiale della Lega: centro digitale del campionato, non un semplice sito
 - **Supabase** (Postgres + Auth + Realtime) come backend di produzione — schema completo in `supabase/schema.sql`
 - **PWA**: manifest, service worker, notifiche push (Web Push / VAPID)
 
-## Stato dei dati
+## Stato dei dati e persistenza
 
 La piattaforma parte **pulita**: nessuna squadra, giocatore, partita, news o sponsor di esempio. La stagione corrente è vuota e pronta per l'inserimento reale dall'area organizzatore (`/admin`).
 
 L'unico contenuto precaricato è l'**archivio storico reale** (`src/lib/data/storico.ts`): le classifiche finali e le classifiche marcatori delle stagioni 2022/2023, 2023/2024 e 2025/2026, trascritte dagli export ufficiali forniti dalla Lega. Alcune fonti sono parziali (cognomi censurati, liste marcatori troncate, un'anomalia di punteggio nella stagione 2025/2026): questi limiti sono segnalati in chiaro nell'interfaccia (badge, tooltip, note) invece di essere nascosti, così l'area organizzatore può correggerli quando avrà le fonti complete.
+
+**Nessuna modalità demo**: ogni azione dell'area organizzatore (crea/modifica/elimina squadra, giocatore, partita, gol, cartellino, MVP, news, sponsor, album, notifica, impostazioni) passa da Route Handler dedicati sotto `src/app/api/admin/*`, che scrivono realmente nello store server-side (`src/lib/store/file-store.ts`). Di default questo store è **basato su file** (`.data/league.json`, escluso dal repository via `.gitignore`): sopravvive a refresh, riavvii del processo e sessioni/utenti diversi, perché legge e scrive sempre da disco (nessuna cache in memoria). Funziona su qualunque hosting con filesystem persistente (VPS, Docker, Railway, Render, Fly.io, `next start` su server proprio). Su piattaforme serverless "pure" (Vercel/Netlify Functions), dove il filesystem è effimero tra un'invocazione e l'altra, va sostituito con Supabase seguendo la sezione successiva — la forma dei dati resta identica, va toccato solo `src/lib/store/file-store.ts`.
 
 ## Avvio rapido
 
@@ -31,7 +33,7 @@ Apri [http://localhost:3000](http://localhost:3000). L'app funziona subito, con 
 
 1. Crea un progetto su [supabase.com](https://supabase.com) ed esegui `supabase/schema.sql` nel SQL editor: crea tutte le tabelle, i trigger di automazione (ricalcolo classifica, statistiche giocatore, notifiche sui gol) e le policy di Row Level Security.
 2. Copia `.env.example` in `.env.local` e compila le variabili (URL/anon key Supabase, chiavi VAPID per le notifiche push, chiave OpenWeather opzionale).
-3. Sostituisci le funzioni in `src/lib/data/*.ts` (oggi lette dallo store in-memoria in `src/lib/mock`) con query verso `src/lib/supabase/client.ts` / `server.ts`: la forma dei dati restituiti (vedi `src/lib/types.ts`) è già identica allo schema Postgres, quindi lo switch non richiede modifiche ai componenti.
+3. Sostituisci le funzioni in `src/lib/store/file-store.ts` (oggi lette/scritte su `.data/league.json`) con query verso `src/lib/supabase/client.ts` / `server.ts`: la forma dei dati restituiti (vedi `src/lib/types.ts`) è già identica allo schema Postgres, quindi lo switch non richiede modifiche né ai componenti né alle route `src/app/api/admin/*`.
 
 ### Creare il Super Admin (sicuro, nessuna password nel codice)
 
@@ -70,8 +72,9 @@ src/
     home/ team/ player/ news/ media/ statistiche/ admin/  Componenti di dominio
   lib/
     types.ts      Modello di dominio, rispecchia 1:1 supabase/schema.sql
-    mock/          Store in-memoria della stagione corrente (vuoto di default)
-    data/          Data layer (oggi legge dallo store, domani da Supabase)
+    store/file-store.ts  Store reale su file (.data/league.json), nessuna cache
+    mock/          Ri-esporta il file-store (compatibilità con il resto del data layer)
+    data/          Data layer di sola lettura (oggi legge dal file-store, domani da Supabase)
     data/storico.ts  Archivio reale delle stagioni concluse (classifiche/marcatori)
     supabase/      Client browser/server/middleware
 supabase/
@@ -105,5 +108,5 @@ npm run lint    # ESLint
 Alcune parti della richiesta completa richiedono un secondo passaggio dedicato, dato il perimetro:
 
 - **Competition builder generico**: i tipi (`Competizione`, `FaseCompetizione`, formati personalizzabili) sono già definiti in `src/lib/types.ts`; manca l'interfaccia guidata lato admin per creare campionati/coppe/tornei/gironi con criteri di classifica configurabili.
-- **Persistenza reale delle modifiche admin**: oggi le azioni nel pannello (crea squadra, aggiungi giocatore, ecc.) vivono nello stato del browser per la sessione corrente (nessun dato demo, ma nemmeno persistenza multi-sessione finché Supabase non è collegato).
+- **Persistenza su Supabase**: la persistenza reale multi-sessione oggi è garantita dallo store su file (`.data/league.json`); su hosting serverless puro (Vercel/Netlify) va migrata a Supabase seguendo la sezione dedicata sopra.
 - **CMS avanzato**: media library centralizzata, SEO, homepage/menu builder, backup/ripristino, log, multi-utente con ruoli e permessi granulari (oggi è previsto un solo Super Admin).

@@ -4,39 +4,43 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --radius: 1.1rem;
+  --radius: 1.15rem;
 
-  /* Base surfaces — deep, near-black with a whisper of green */
-  --background: #060907;
-  --background-elevated: #0b100c;
-  --surface: #0e1512;
-  --surface-2: #131b17;
-  --foreground: #f4f7f4;
-  --muted-foreground: #9aa89f;
+  /* Base surfaces — true onyx, warm undertone, deeper than pure black */
+  --background: #08090a;
+  --background-elevated: #0d100e;
+  --surface: #111512;
+  --surface-2: #171d19;
+  --foreground: #f6f5f0;
+  --muted-foreground: #9a9d95;
 
-  /* Brand green */
-  --primary: #16a34a;
-  --primary-foreground: #04140b;
-  --primary-glow: #22e07a;
-  --pitch-900: #052012;
-  --pitch-800: #06301b;
-  --pitch-700: #0a4526;
+  /* Signature green — jewel emerald, richer than a flat brand green */
+  --primary: #0f9c52;
+  --primary-foreground: #03150c;
+  --primary-glow: #34e88a;
+  --emerald-deep: #063a24;
+  --pitch-900: #04140d;
+  --pitch-800: #072a1a;
+  --pitch-700: #0d4028;
 
-  /* Gold accent */
-  --gold: #d9b84a;
-  --gold-bright: #f3d16b;
-  --gold-foreground: #1a1305;
+  /* Champagne gold — polished metal, three-stop foil */
+  --gold-dim: #a3812f;
+  --gold: #d9b661;
+  --gold-bright: #f6dd9a;
+  --gold-foreground: #1c1404;
 
-  --border: rgba(244, 247, 244, 0.09);
-  --border-strong: rgba(244, 247, 244, 0.16);
+  --border: rgba(246, 245, 240, 0.08);
+  --border-strong: rgba(246, 245, 240, 0.15);
   --ring: var(--primary-glow);
 
   --danger: #ef4444;
-  --warning: #f59e0b;
-  --live: #ef4444;
+  --warning: #f5a524;
+  --live: #ff4d5e;
 
-  --card: rgba(20, 27, 23, 0.6);
+  --card: rgba(23, 29, 25, 0.55);
   --card-foreground: var(--foreground);
+
+  --noise-opacity: 0.035;
 }
 
 .dark {
@@ -46,38 +50,40 @@
 .light {
   color-scheme: light;
 
-  --background: #f3f5f2;
+  --background: #f4f3ee;
   --background-elevated: #ffffff;
   --surface: #ffffff;
-  --surface-2: #eef1ec;
-  --foreground: #0c1410;
-  --muted-foreground: #5b6a60;
+  --surface-2: #ece9e0;
+  --foreground: #0e120f;
+  --muted-foreground: #5c6058;
 
   --primary-foreground: #ffffff;
-  --pitch-900: #e7f3ea;
-  --pitch-800: #d9ecdd;
-  --pitch-700: #c7e4cd;
+  --pitch-900: #e8f0ea;
+  --pitch-800: #d9e8dd;
+  --pitch-700: #c3ddca;
 
   --gold-foreground: #2a2003;
 
-  --border: rgba(12, 20, 16, 0.09);
-  --border-strong: rgba(12, 20, 16, 0.16);
+  --border: rgba(14, 18, 15, 0.09);
+  --border-strong: rgba(14, 18, 15, 0.16);
 
-  --card: rgba(255, 255, 255, 0.7);
+  --card: rgba(255, 255, 255, 0.72);
   --card-foreground: var(--foreground);
+
+  --noise-opacity: 0.02;
 }
 
 .light body {
   background:
     radial-gradient(ellipse 120% 60% at 50% -10%, var(--pitch-800) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(217, 184, 74, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(217, 182, 97, 0.14) 0%, transparent 50%),
     var(--background);
 }
 
 .light .glass,
 .light .glass-strong {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.55));
-  box-shadow: 0 1px 2px rgba(12, 20, 16, 0.04);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.58));
+  box-shadow: 0 1px 2px rgba(14, 18, 15, 0.04);
 }
 
 @theme inline {
@@ -91,10 +97,12 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-glow: var(--primary-glow);
+  --color-emerald-deep: var(--emerald-deep);
   --color-pitch-900: var(--pitch-900);
   --color-pitch-800: var(--pitch-800);
   --color-pitch-700: var(--pitch-700);
 
+  --color-gold-dim: var(--gold-dim);
   --color-gold: var(--gold);
   --color-gold-bright: var(--gold-bright);
   --color-gold-foreground: var(--gold-foreground);
@@ -110,20 +118,24 @@
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
 
-  --font-display: var(--font-outfit);
+  --font-display: var(--font-fraunces);
+  --font-heading: var(--font-outfit);
   --font-sans: var(--font-inter);
   --font-score: var(--font-rajdhani);
 
-  --radius-sm: calc(var(--radius) - 0.5rem);
-  --radius-md: calc(var(--radius) - 0.25rem);
+  --radius-sm: calc(var(--radius) - 0.55rem);
+  --radius-md: calc(var(--radius) - 0.3rem);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 0.5rem);
-  --radius-2xl: calc(var(--radius) + 1.25rem);
+  --radius-xl: calc(var(--radius) + 0.55rem);
+  --radius-2xl: calc(var(--radius) + 1.35rem);
 
   --animate-shimmer: shimmer 2s linear infinite;
   --animate-pulse-live: pulse-live 1.6s ease-in-out infinite;
   --animate-float: float 6s ease-in-out infinite;
   --animate-fade-up: fade-up 0.6s ease-out both;
+  --animate-aurora: aurora 18s ease-in-out infinite;
+  --animate-border-sweep: border-sweep 3.5s linear infinite;
+  --animate-shine: shine 2.6s ease-in-out infinite;
 }
 
 @keyframes shimmer {
@@ -142,6 +154,17 @@
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes aurora {
+  0%, 100% { background-position: 0% 50%, 100% 50%, 50% 0%; }
+  50% { background-position: 100% 50%, 0% 50%, 50% 100%; }
+}
+@keyframes border-sweep {
+  to { --sweep-angle: 360deg; }
+}
+@keyframes shine {
+  0% { background-position: -150% 0; }
+  100% { background-position: 250% 0; }
+}
 
 * {
   border-color: var(--border);
@@ -152,13 +175,26 @@ html {
 }
 
 body {
+  position: relative;
   background:
     radial-gradient(ellipse 120% 60% at 50% -10%, var(--pitch-800) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(217, 184, 74, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 45% at 105% 0%, rgba(217, 182, 97, 0.07) 0%, transparent 55%),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Grana sottile per una superficie "materica" invece di un flat digitale */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: var(--noise-opacity);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 ::selection {
@@ -194,7 +230,8 @@ body {
   }
 
   .text-gradient-gold {
-    background: linear-gradient(120deg, var(--gold-bright), var(--gold) 60%, #a3812b);
+    background: linear-gradient(100deg, var(--gold-dim) 0%, var(--gold-bright) 35%, var(--gold) 55%, var(--gold-bright) 75%, var(--gold-dim) 100%);
+    background-size: 220% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -214,6 +251,16 @@ body {
   .bg-shimmer {
     background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%, var(--surface) 63%);
     background-size: 400% 100%;
+  }
+
+  /* Sfondo "aurora": mesh di luce che respira lentamente, firma visiva degli hero */
+  .bg-aurora {
+    background-image:
+      radial-gradient(ellipse 55% 60% at 15% 20%, color-mix(in oklab, var(--primary) 38%, transparent) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 55% at 85% 15%, color-mix(in oklab, var(--gold) 30%, transparent) 0%, transparent 60%),
+      radial-gradient(ellipse 65% 60% at 50% 100%, color-mix(in oklab, var(--emerald-deep) 55%, transparent) 0%, transparent 65%);
+    background-size: 200% 200%, 200% 200%, 200% 200%;
+    animation: var(--animate-aurora);
   }
 
   .divider-fade {
@@ -240,5 +287,61 @@ body {
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Card con bordo-gioiello: un filo di luce che percorre il perimetro all'hover */
+  .card-luxury {
+    position: relative;
+    isolation: isolate;
+  }
+  .card-luxury::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(from var(--sweep-angle, 0deg), transparent 0%, var(--gold-bright) 12%, transparent 24%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .card-luxury:hover::before {
+    opacity: 1;
+    animation: var(--animate-border-sweep);
+  }
+
+  /* Riflesso di luce che attraversa i pulsanti principali al passaggio del mouse */
+  .shine-sweep {
+    position: relative;
+    overflow: hidden;
+  }
+  .shine-sweep::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+  .shine-sweep:hover::after {
+    left: 130%;
+  }
+
+  /* Riflesso metallico che attraversa il testo/badge dorato */
+  .shine-gold {
+    background: linear-gradient(110deg, var(--gold-dim) 20%, var(--gold-bright) 40%, var(--gold-bright) 50%, var(--gold-dim) 70%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: var(--animate-shine);
   }
 }

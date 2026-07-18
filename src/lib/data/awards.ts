@@ -19,3 +19,11 @@ export function getStagioneAttuale() {
 export function getStagioneById(id: string) {
   return legaData().stagioni.find((s) => s.id === id);
 }
+
+export function getNotifiche() {
+  return [...legaData().notifiche].sort((a, b) => new Date(b.creataIl).getTime() - new Date(a.creataIl).getTime());
+}
+
+export function getImpostazioni() {
+  return legaData().impostazioni;
+}

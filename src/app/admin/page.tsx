@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,9 +36,6 @@ export default function AdminDashboardPage() {
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">Benvenuto nello staff della Lega Calcio Over 40. Ecco lo stato attuale del campionato.</p>
       </div>
-
-      <DemoBanner />
-
       <AdminShell>
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

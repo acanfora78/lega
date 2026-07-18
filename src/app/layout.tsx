@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Outfit, Rajdhani } from "next/font/google";
+import { Fraunces, Inter, Outfit, Rajdhani } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { TopHeader } from "@/components/layout/top-header";
@@ -27,6 +27,17 @@ const rajdhani = Rajdhani({
   weight: ["500", "600", "700"],
 });
 
+// Serif editoriale a ottica variabile: firma tipografica "luxury" dell'app,
+// leggibile tanto nei titoli hero quanto nelle piccole etichette delle card.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  display: "swap",
+  weight: "variable",
+  style: ["normal", "italic"],
+  axes: ["opsz", "SOFT", "WONK"],
+});
+
 export const metadata: Metadata = {
   title: {
     default: "Lega Calcio Over 40 — Campo Santa Teresa, Scafati",
@@ -52,6 +63,11 @@ export const metadata: Metadata = {
   },
 };
 
+// I dati della Lega vivono nello store server-side (file o Supabase) e cambiano
+// ad ogni azione dell'area organizzatore: nessuna pagina va prerenderizzata in
+// modo statico a build time, altrimenti mostrerebbe uno snapshot obsoleto.
+export const dynamic = "force-dynamic";
+
 export const viewport: Viewport = {
   themeColor: "#060907",
   width: "device-width",
@@ -69,7 +85,7 @@ export default function RootLayout({
     <html
       lang="it"
       suppressHydrationWarning
-      className={`${inter.variable} ${outfit.variable} ${rajdhani.variable} h-full antialiased`}
+      className={`${inter.variable} ${outfit.variable} ${rajdhani.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>

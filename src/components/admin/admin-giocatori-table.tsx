@@ -1,63 +1,70 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, Trash2, Search, Plus } from "lucide-react";
+import { Pencil, Trash2, Search, Plus, Loader2 } from "lucide-react";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { getSquadraById } from "@/lib/data";
 import type { Giocatore, Ruolo, Squadra } from "@/lib/types";
-import { legaData } from "@/lib/mock";
-import { slugify } from "@/lib/utils";
 
 const RUOLI: Ruolo[] = ["Portiere", "Difensore", "Centrocampista", "Attaccante"];
 
-export function AdminGiocatoriTable({ giocatori, squadre }: { giocatori: Giocatore[]; squadre: Squadra[] }) {
-  const [lista, setLista] = useState(giocatori);
+export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocatori: Giocatore[]; squadre: Squadra[]; stagioneId: string }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [query, setQuery] = useState("");
   const [squadraFiltro, setSquadraFiltro] = useState("tutte");
   const [editing, setEditing] = useState<Giocatore | null>(null);
   const [nuovoOpen, setNuovoOpen] = useState(false);
-
-  const stagioneId = legaData().stagioneAttualeId;
+  const squadreMap = useMemo(() => new Map(squadre.map((s) => [s.id, s])), [squadre]);
 
   const filtrati = useMemo(() => {
-    return lista.filter((g) => {
+    return giocatori.filter((g) => {
       const matchQuery = `${g.nome} ${g.cognome}`.toLowerCase().includes(query.toLowerCase());
       const matchSquadra = squadraFiltro === "tutte" || g.squadraId === squadraFiltro;
       return matchQuery && matchSquadra;
     });
-  }, [lista, query, squadraFiltro]);
+  }, [giocatori, query, squadraFiltro]);
 
-  function elimina(id: string) {
-    setLista((prev) => prev.filter((g) => g.id !== id));
-    toast.success("Giocatore rimosso dalla rosa");
+  async function elimina(id: string) {
+    try {
+      const res = await fetch(`/api/admin/giocatori/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Giocatore rimosso dalla rosa");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile rimuovere il giocatore");
+    }
   }
 
-  function salva(form: FormData) {
+  async function salva(form: FormData) {
     if (!editing) return;
-    setLista((prev) =>
-      prev.map((g) =>
-        g.id === editing.id
-          ? {
-              ...g,
-              nome: String(form.get("nome") ?? g.nome),
-              cognome: String(form.get("cognome") ?? g.cognome),
-              numeroMaglia: Number(form.get("numero") ?? g.numeroMaglia),
-              bio: String(form.get("bio") ?? g.bio),
-            }
-          : g
-      )
-    );
-    toast.success("Giocatore aggiornato");
-    setEditing(null);
+    try {
+      const res = await fetch(`/api/admin/giocatori/${editing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: String(form.get("nome") ?? editing.nome),
+          cognome: String(form.get("cognome") ?? editing.cognome),
+          numeroMaglia: Number(form.get("numero") ?? editing.numeroMaglia),
+          bio: String(form.get("bio") ?? editing.bio),
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Giocatore aggiornato");
+      setEditing(null);
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile aggiornare il giocatore");
+    }
   }
 
-  function crea(form: FormData) {
+  async function crea(form: FormData) {
     const nome = String(form.get("nome") ?? "");
     const cognome = String(form.get("cognome") ?? "");
     const squadraId = String(form.get("squadraId") ?? "");
@@ -65,29 +72,27 @@ export function AdminGiocatoriTable({ giocatori, squadre }: { giocatori: Giocato
       toast.error("Compila nome, cognome e squadra");
       return;
     }
-    const nuovo: Giocatore = {
-      id: `giocatore-${Date.now()}`,
-      slug: slugify(`${nome}-${cognome}`),
-      nome,
-      cognome,
-      fotoUrl: "",
-      numeroMaglia: Number(form.get("numero") ?? 1),
-      ruolo: (form.get("ruolo") as Ruolo) ?? "Centrocampista",
-      eta: Number(form.get("eta") ?? 40),
-      dataNascita: "",
-      altezzaCm: 178,
-      pesoKg: 78,
-      piedePreferito: "Destro",
-      squadraId,
-      bio: String(form.get("bio") ?? ""),
-      galleryUrls: [],
-      videoUrls: [],
-      statistiche: [],
-      trofei: [],
-    };
-    setLista((prev) => [...prev, nuovo]);
-    toast.success("Giocatore aggiunto alla rosa");
-    setNuovoOpen(false);
+    try {
+      const res = await fetch("/api/admin/giocatori", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome,
+          cognome,
+          squadraId,
+          ruolo: form.get("ruolo"),
+          numeroMaglia: Number(form.get("numero") ?? 1),
+          eta: Number(form.get("eta") ?? 40),
+          bio: String(form.get("bio") ?? ""),
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Giocatore aggiunto alla rosa");
+      setNuovoOpen(false);
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile aggiungere il giocatore");
+    }
   }
 
   return (
@@ -113,6 +118,7 @@ export function AdminGiocatoriTable({ giocatori, squadre }: { giocatori: Giocato
         <Button size="sm" className="shrink-0" onClick={() => setNuovoOpen(true)} disabled={squadre.length === 0}>
           <Plus className="size-4" /> Nuovo giocatore
         </Button>
+        {isPending && <Loader2 className="size-4 shrink-0 animate-spin self-center text-muted-foreground" />}
       </div>
 
       {squadre.length === 0 && <p className="text-sm text-muted-foreground">Crea prima almeno una squadra per poter aggiungere giocatori.</p>}
@@ -134,7 +140,7 @@ export function AdminGiocatoriTable({ giocatori, squadre }: { giocatori: Giocato
             </thead>
             <tbody>
               {filtrati.map((g) => {
-                const squadra = getSquadraById(g.squadraId);
+                const squadra = squadreMap.get(g.squadraId);
                 const stat = g.statistiche.find((s) => s.stagioneId === stagioneId);
                 return (
                   <tr key={g.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">

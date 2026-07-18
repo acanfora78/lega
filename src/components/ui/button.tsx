@@ -12,8 +12,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-gradient-to-b from-primary-glow to-primary text-primary-foreground shadow-[0_0_0_1px_rgba(34,224,122,0.25),0_8px_24px_-8px_rgba(22,163,74,0.6)] hover:shadow-[0_0_0_1px_rgba(34,224,122,0.4),0_10px_28px_-6px_rgba(22,163,74,0.75)]",
-        gold: "bg-gradient-to-b from-gold-bright to-gold text-gold-foreground shadow-[0_8px_24px_-8px_rgba(217,184,74,0.6)] hover:shadow-[0_10px_28px_-6px_rgba(217,184,74,0.75)]",
+          "shine-sweep bg-gradient-to-b from-primary-glow to-primary text-primary-foreground shadow-[0_0_0_1px_rgba(52,232,138,0.25),0_8px_24px_-8px_rgba(15,156,82,0.6)] hover:shadow-[0_0_0_1px_rgba(52,232,138,0.4),0_10px_28px_-6px_rgba(15,156,82,0.75)]",
+        gold: "shine-sweep bg-gradient-to-b from-gold-bright via-gold to-gold-dim text-gold-foreground shadow-[0_8px_24px_-8px_rgba(217,182,97,0.6)] hover:shadow-[0_10px_28px_-6px_rgba(217,182,97,0.8)]",
         outline:
           "border border-border-strong bg-white/[0.02] text-foreground hover:bg-white/[0.06]",
         ghost: "text-foreground hover:bg-white/[0.06]",

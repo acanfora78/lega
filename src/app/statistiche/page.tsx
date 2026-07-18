@@ -11,6 +11,7 @@ import {
   getClassificaCleanSheet,
   getMigliorPortiere,
   getStagioneAttuale,
+  getSquadre,
 } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Statistiche" };
@@ -34,6 +35,7 @@ export default function StatistichePage() {
         espulsi={getClassificaEspulsioni(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.espulsioni }))}
         presenze={getClassificaPresenze(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.presenze }))}
         mvp={getClassificaMvp(20).map((x) => ({ giocatore: x.giocatore, value: x.stat!.mvp }))}
+        squadre={getSquadre()}
       />
     </Container>
   );

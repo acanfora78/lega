@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { AdminMediaGrid } from "@/components/admin/admin-media-grid";
 import { getAlbum } from "@/lib/data";
 
@@ -15,7 +14,6 @@ export default function AdminMediaPage() {
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Galleria Media</h1>
         <p className="mt-1 text-sm text-muted-foreground">Carica album fotografici, video e highlights della Lega.</p>
       </div>
-      <DemoBanner />
       <AdminShell>
         <AdminMediaGrid album={getAlbum()} />
       </AdminShell>

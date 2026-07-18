@@ -7,7 +7,7 @@ export function TeamCard({ squadra, riga }: { squadra: Squadra; riga?: RigaClass
   return (
     <Link
       href={`/squadre/${squadra.slug}`}
-      className="group relative block overflow-hidden rounded-2xl glass p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary-glow/30"
+      className="group relative block overflow-hidden rounded-2xl glass card-luxury p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary-glow/30"
     >
       <div
         className="absolute inset-x-0 top-0 h-24 opacity-25 blur-2xl transition-opacity group-hover:opacity-40"

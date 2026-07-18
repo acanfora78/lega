@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Minus, Plus, Trophy } from "lucide-react";
+import { Minus, Plus, Trophy, Loader2 } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { MatchTimeline } from "@/components/match/timeline";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +35,8 @@ export function AdminMatchControl({
   rosterCasa: Giocatore[];
   rosterTrasferta: Giocatore[];
 }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [stato, setStato] = useState<StatoPartita>(partita.stato);
   const [golCasa, setGolCasa] = useState(partita.golCasa);
   const [golTrasferta, setGolTrasferta] = useState(partita.golTrasferta);
@@ -47,7 +50,27 @@ export function AdminMatchControl({
 
   const rosterAttivo = squadraForm === casa.id ? rosterCasa : rosterTrasferta;
 
-  function aggiungiEvento() {
+  async function patch(body: Record<string, unknown>) {
+    const res = await fetch(`/api/admin/partite/${partita.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+    startTransition(() => router.refresh());
+  }
+
+  async function aggiornaRisultato(nuovoCasa: number, nuovoTrasferta: number) {
+    setGolCasa(nuovoCasa);
+    setGolTrasferta(nuovoTrasferta);
+    try {
+      await patch({ golCasa: nuovoCasa, golTrasferta: nuovoTrasferta });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile salvare il risultato");
+    }
+  }
+
+  async function aggiungiEvento() {
     if (!giocatoreForm) {
       toast.error("Seleziona un giocatore");
       return;
@@ -66,17 +89,48 @@ export function AdminMatchControl({
       if (squadraForm === casa.id) setGolCasa((g) => g + 1);
       else setGolTrasferta((g) => g + 1);
     }
-    toast.success("Evento aggiunto alla cronaca");
+    try {
+      const res = await fetch(`/api/admin/partite/${partita.id}/eventi`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ minuto: minutoForm, tipo: tipoForm, squadraId: squadraForm, giocatoreId: giocatoreForm }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Evento aggiunto alla cronaca");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile salvare l'evento");
+    }
     setGiocatoreForm("");
   }
 
-  function salvaStato(v: StatoPartita) {
+  async function salvaStato(v: StatoPartita) {
     setStato(v);
-    toast.success(`Stato partita aggiornato a "${v}"`);
+    try {
+      await patch({ stato: v });
+      toast.success(`Stato partita aggiornato a "${v}"`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile aggiornare lo stato");
+    }
+  }
+
+  async function salvaMvp(giocatoreId: string) {
+    setMvpId(giocatoreId);
+    try {
+      await patch({ mvpGiocatoreId: giocatoreId });
+      toast.success("MVP assegnato");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile assegnare l'MVP");
+    }
   }
 
   return (
     <div className="flex flex-col gap-6">
+      {isPending && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="size-3.5 animate-spin" /> Sincronizzazione in corso...
+        </div>
+      )}
       <Card>
         <CardContent className="flex flex-col gap-5 p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -85,9 +139,9 @@ export function AdminMatchControl({
               <span className="font-semibold">{casa.nomeBreve}</span>
             </div>
             <div className="flex items-center gap-3">
-              <ScoreControl value={golCasa} onChange={setGolCasa} />
+              <ScoreControl value={golCasa} onChange={(v) => aggiornaRisultato(v, golTrasferta)} />
               <span className="font-score text-lg text-muted-foreground">–</span>
-              <ScoreControl value={golTrasferta} onChange={setGolTrasferta} />
+              <ScoreControl value={golTrasferta} onChange={(v) => aggiornaRisultato(golCasa, v)} />
             </div>
             <div className="flex items-center gap-2">
               <span className="font-semibold">{trasferta.nomeBreve}</span>
@@ -191,7 +245,7 @@ export function AdminMatchControl({
           <p className="flex items-center gap-2 font-display text-base font-bold">
             <Trophy className="size-4 text-gold-bright" /> MVP della partita
           </p>
-          <Select value={mvpId} onValueChange={(v) => { setMvpId(v); toast.success("MVP assegnato"); }}>
+          <Select value={mvpId} onValueChange={salvaMvp}>
             <SelectTrigger className="sm:w-72">
               <SelectValue placeholder="Seleziona MVP" />
             </SelectTrigger>
@@ -210,7 +264,7 @@ export function AdminMatchControl({
         <p className="mb-3 font-display text-base font-bold">Anteprima cronaca</p>
         <Card>
           <CardContent className="p-5">
-            <MatchTimeline partita={{ ...partita, eventi }} />
+            <MatchTimeline partita={{ ...partita, eventi }} squadre={[casa, trasferta]} giocatori={[...rosterCasa, ...rosterTrasferta]} />
           </CardContent>
         </Card>
       </div>

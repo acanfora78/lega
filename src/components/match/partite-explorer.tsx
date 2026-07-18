@@ -12,6 +12,7 @@ function isSameDay(a: Date, b: Date) {
 
 export function PartiteExplorer({ partite, squadre }: { partite: Partita[]; squadre: Squadra[] }) {
   const [squadraId, setSquadraId] = useState<string>("tutte");
+  const squadreMap = useMemo(() => new Map(squadre.map((s) => [s.id, s])), [squadre]);
 
   const filtrate = useMemo(
     () => (squadraId === "tutte" ? partite : partite.filter((p) => p.squadraCasaId === squadraId || p.squadraTrasfertaId === squadraId)),
@@ -61,7 +62,7 @@ export function PartiteExplorer({ partite, squadre }: { partite: Partita[]; squa
             ) : (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {oggi.map((p) => (
-                  <MatchCard key={p.id} partita={p} />
+                  <MatchCard key={p.id} partita={p} casa={squadreMap.get(p.squadraCasaId)!} trasferta={squadreMap.get(p.squadraTrasfertaId)!} />
                 ))}
               </div>
             )}
@@ -76,7 +77,7 @@ export function PartiteExplorer({ partite, squadre }: { partite: Partita[]; squa
                   <p className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Giornata {giornata}</p>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {lista.map((p) => (
-                      <MatchCard key={p.id} partita={p} />
+                      <MatchCard key={p.id} partita={p} casa={squadreMap.get(p.squadraCasaId)!} trasferta={squadreMap.get(p.squadraTrasfertaId)!} />
                     ))}
                   </div>
                 </div>
@@ -93,7 +94,7 @@ export function PartiteExplorer({ partite, squadre }: { partite: Partita[]; squa
                   <p className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Giornata {giornata}</p>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {lista.map((p) => (
-                      <MatchCard key={p.id} partita={p} />
+                      <MatchCard key={p.id} partita={p} casa={squadreMap.get(p.squadraCasaId)!} trasferta={squadreMap.get(p.squadraTrasfertaId)!} />
                     ))}
                   </div>
                 </div>

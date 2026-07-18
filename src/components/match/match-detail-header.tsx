@@ -19,6 +19,7 @@ export function MatchDetailHeader({ partita }: { partita: Partita }) {
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">
+      <div className="bg-aurora absolute inset-0 opacity-50 mix-blend-screen" />
       <PitchBackdrop />
       <StadiumLights />
       <div className="relative px-5 py-8 sm:px-10 sm:py-10">

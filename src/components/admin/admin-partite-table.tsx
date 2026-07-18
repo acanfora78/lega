@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Settings2 } from "lucide-react";
+import { Plus, Settings2, Loader2 } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,45 +13,48 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDateIt, formatTimeIt } from "@/lib/utils";
-import { getSquadraById } from "@/lib/data";
 import type { Partita, Squadra } from "@/lib/types";
 
-export function AdminPartiteTable({ partite: iniziali, squadre }: { partite: Partita[]; squadre: Squadra[] }) {
-  const [partite, setPartite] = useState(iniziali);
+export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; squadre: Squadra[] }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const squadreMap = useMemo(() => new Map(squadre.map((s) => [s.id, s])), [squadre]);
 
-  function crea(form: FormData) {
+  async function crea(form: FormData) {
     const casaId = String(form.get("casa") ?? "");
     const trasfertaId = String(form.get("trasferta") ?? "");
     if (!casaId || !trasfertaId || casaId === trasfertaId) {
       toast.error("Seleziona due squadre diverse");
       return;
     }
-    const data = String(form.get("data") ?? "");
-    const ora = String(form.get("ora") ?? "15:00");
-    const nuova: Partita = {
-      id: `partita-${Date.now()}`,
-      stagioneId: "stagione-corrente",
-      giornata: Number(form.get("giornata") ?? 1),
-      dataOra: new Date(`${data}T${ora}:00`).toISOString(),
-      stato: "programmata",
-      squadraCasaId: casaId,
-      squadraTrasfertaId: trasfertaId,
-      golCasa: 0,
-      golTrasferta: 0,
-      arbitro: String(form.get("arbitro") ?? ""),
-      campo: String(form.get("campo") ?? "Campo Sportivo Santa Teresa"),
-      eventi: [],
-      galleryUrls: [],
-    };
-    setPartite((prev) => [...prev, nuova]);
-    toast.success("Partita aggiunta al calendario");
-    setOpen(false);
+    try {
+      const res = await fetch("/api/admin/partite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          squadraCasaId: casaId,
+          squadraTrasfertaId: trasfertaId,
+          giornata: Number(form.get("giornata") ?? 1),
+          data: String(form.get("data") ?? ""),
+          ora: String(form.get("ora") ?? "15:00"),
+          arbitro: String(form.get("arbitro") ?? ""),
+          campo: String(form.get("campo") ?? "Campo Sportivo Santa Teresa"),
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Partita aggiunta al calendario");
+      setOpen(false);
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile creare la partita");
+    }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-2">
+        {isPending && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
         <Button size="sm" onClick={() => setOpen(true)} disabled={squadre.length < 2}>
           <Plus className="size-4" /> Nuova partita
         </Button>
@@ -79,8 +83,8 @@ export function AdminPartiteTable({ partite: iniziali, squadre }: { partite: Par
               {[...partite]
                 .sort((a, b) => a.giornata - b.giornata)
                 .map((p) => {
-                  const casa = getSquadraById(p.squadraCasaId);
-                  const trasferta = getSquadraById(p.squadraTrasfertaId);
+                  const casa = squadreMap.get(p.squadraCasaId);
+                  const trasferta = squadreMap.get(p.squadraTrasfertaId);
                   if (!casa || !trasferta) return null;
                   return (
                     <tr key={p.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">

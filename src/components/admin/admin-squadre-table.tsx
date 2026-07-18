@@ -1,21 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { RigaClassifica, Squadra } from "@/lib/types";
-import { slugify } from "@/lib/utils";
 
 interface Riga {
   squadra: Squadra;
@@ -23,25 +18,13 @@ interface Riga {
 }
 
 export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
-  const [righe, setRighe] = useState(dati);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [editing, setEditing] = useState<Squadra | null>(null);
   const [open, setOpen] = useState(false);
 
   function apriNuovo() {
-    setEditing({
-      id: `nuova-${Date.now()}`,
-      slug: "",
-      nome: "",
-      nomeBreve: "",
-      logoUrl: "",
-      coverUrl: "",
-      coloriSociali: ["#16a34a", "#0b3d24"],
-      descrizione: "",
-      fondazione: new Date().getFullYear(),
-      allenatore: "",
-      sponsorIds: [],
-      galleryUrls: [],
-    });
+    setEditing(null);
     setOpen(true);
   }
 
@@ -50,88 +33,99 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
     setOpen(true);
   }
 
-  function salva(form: FormData) {
-    if (!editing) return;
-    const nome = String(form.get("nome") ?? "");
-    const aggiornata: Squadra = {
-      ...editing,
-      nome,
-      nomeBreve: String(form.get("nomeBreve") ?? nome),
-      slug: editing.slug || slugify(nome),
+  async function salva(form: FormData) {
+    const payload = {
+      nome: String(form.get("nome") ?? ""),
+      nomeBreve: String(form.get("nomeBreve") ?? ""),
       allenatore: String(form.get("allenatore") ?? ""),
-      fondazione: Number(form.get("fondazione") ?? editing.fondazione),
+      fondazione: Number(form.get("fondazione") ?? 0),
       descrizione: String(form.get("descrizione") ?? ""),
     };
-    setRighe((prev) => {
-      const esiste = prev.some((r) => r.squadra.id === aggiornata.id);
-      if (esiste) return prev.map((r) => (r.squadra.id === aggiornata.id ? { ...r, squadra: aggiornata } : r));
-      return [...prev, { squadra: aggiornata, riga: undefined }];
-    });
-    toast.success(`${nome} salvata`);
-    setOpen(false);
+
+    try {
+      const res = await fetch(editing ? `/api/admin/squadre/${editing.id}` : "/api/admin/squadre", {
+        method: editing ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success(`${payload.nome} salvata`);
+      setOpen(false);
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile salvare la squadra");
+    }
   }
 
-  function elimina(id: string) {
-    setRighe((prev) => prev.filter((r) => r.squadra.id !== id));
-    toast.success("Squadra rimossa");
+  async function elimina(id: string) {
+    try {
+      const res = await fetch(`/api/admin/squadre/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Squadra rimossa");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile rimuovere la squadra");
+    }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-2">
+        {isPending && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
         <Button onClick={apriNuovo} size="sm">
           <Plus className="size-4" /> Nuova squadra
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl glass">
-        <table className="w-full min-w-[640px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th className="px-4 py-3">Squadra</th>
-              <th className="px-2 py-3">Allenatore</th>
-              <th className="px-2 py-3 text-center">Posizione</th>
-              <th className="px-2 py-3 text-center">Punti</th>
-              <th className="px-4 py-3 text-right">Azioni</th>
-            </tr>
-          </thead>
-          <tbody>
-            {righe.map(({ squadra, riga }) => (
-              <tr key={squadra.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2.5 font-semibold">
-                    <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} size={28} />
-                    {squadra.nome}
-                  </div>
-                </td>
-                <td className="px-2 py-3 text-muted-foreground">{squadra.allenatore}</td>
-                <td className="px-2 py-3 text-center tabular-nums">{riga?.posizione ?? "—"}</td>
-                <td className="px-2 py-3 text-center tabular-nums">{riga?.punti ?? "—"}</td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-1.5">
-                    <Button variant="ghost" size="icon" onClick={() => apriModifica(squadra)} aria-label="Modifica">
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => elimina(squadra.id)} aria-label="Elimina">
-                      <Trash2 className="size-4 text-danger" />
-                    </Button>
-                  </div>
-                </td>
+      {dati.length === 0 ? (
+        <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessuna squadra ancora registrata.</div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl glass">
+          <table className="w-full min-w-[640px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="px-4 py-3">Squadra</th>
+                <th className="px-2 py-3">Allenatore</th>
+                <th className="px-2 py-3 text-center">Posizione</th>
+                <th className="px-2 py-3 text-center">Punti</th>
+                <th className="px-4 py-3 text-right">Azioni</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {dati.map(({ squadra, riga }) => (
+                <tr key={squadra.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5 font-semibold">
+                      <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} size={28} />
+                      {squadra.nome}
+                    </div>
+                  </td>
+                  <td className="px-2 py-3 text-muted-foreground">{squadra.allenatore}</td>
+                  <td className="px-2 py-3 text-center tabular-nums">{riga?.posizione ?? "—"}</td>
+                  <td className="px-2 py-3 text-center tabular-nums">{riga?.punti ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1.5">
+                      <Button variant="ghost" size="icon" onClick={() => apriModifica(squadra)} aria-label="Modifica">
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => elimina(squadra.id)} aria-label="Elimina">
+                        <Trash2 className="size-4 text-danger" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing?.nome ? "Modifica squadra" : "Nuova squadra"}</DialogTitle>
+            <DialogTitle>{editing ? "Modifica squadra" : "Nuova squadra"}</DialogTitle>
           </DialogHeader>
-          <form
-            action={(fd) => salva(fd)}
-            className="flex flex-col gap-3"
-          >
+          <form action={(fd) => salva(fd)} className="flex flex-col gap-3">
             <Field label="Nome completo" name="nome" defaultValue={editing?.nome} required />
             <Field label="Nome breve" name="nomeBreve" defaultValue={editing?.nomeBreve} required />
             <Field label="Allenatore" name="allenatore" defaultValue={editing?.allenatore} />

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Send, Bell } from "lucide-react";
+import { Send, Bell, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,33 +11,34 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDateIt, formatTimeIt } from "@/lib/utils";
+import type { Notifica } from "@/lib/types";
 
-interface Storico {
-  id: string;
-  titolo: string;
-  corpo: string;
-  tipo: string;
-  quando: string;
-}
-
-export function AdminNotificheComposer() {
+export function AdminNotificheComposer({ notifiche }: { notifiche: Notifica[] }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [titolo, setTitolo] = useState("");
   const [corpo, setCorpo] = useState("");
   const [tipo, setTipo] = useState("news");
-  const [storico, setStorico] = useState<Storico[]>([
-    { id: "n1", titolo: "Giornata 12 al via", corpo: "Segui tutte le partite in diretta sull'app!", tipo: "news", quando: new Date("2026-07-17T08:05:00+02:00").toISOString() },
-    { id: "n2", titolo: "Comunicato disciplinare", corpo: "Pubblicate le decisioni del Giudice Sportivo.", tipo: "comunicato", quando: new Date("2026-07-14T12:10:00+02:00").toISOString() },
-  ]);
 
-  function invia() {
+  async function invia() {
     if (!titolo.trim() || !corpo.trim()) {
       toast.error("Compila titolo e testo della notifica");
       return;
     }
-    setStorico((prev) => [{ id: `local-${Date.now()}`, titolo, corpo, tipo, quando: new Date().toISOString() }, ...prev]);
-    toast.success("Notifica inviata a tutti gli utenti");
-    setTitolo("");
-    setCorpo("");
+    try {
+      const res = await fetch("/api/admin/notifiche", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ titolo, corpo, tipo }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Notifica inviata a tutti gli utenti");
+      setTitolo("");
+      setCorpo("");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile inviare la notifica");
+    }
   }
 
   return (
@@ -70,28 +72,32 @@ export function AdminNotificheComposer() {
             <Label htmlFor="corpo">Testo</Label>
             <Textarea id="corpo" value={corpo} onChange={(e) => setCorpo(e.target.value)} placeholder="Scrivi il messaggio della notifica..." rows={4} maxLength={200} />
           </div>
-          <Button onClick={invia} className="mt-1 w-fit">
-            <Send className="size-4" /> Invia a tutti gli utenti
+          <Button onClick={invia} disabled={isPending} className="mt-1 w-fit">
+            {isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} Invia a tutti gli utenti
           </Button>
         </CardContent>
       </Card>
 
       <div>
         <p className="mb-3 font-display text-base font-bold">Storico invii</p>
-        <div className="flex flex-col divide-y divide-border overflow-hidden rounded-2xl glass">
-          {storico.map((n) => (
-            <div key={n.id} className="p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-bold">{n.titolo}</p>
-                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{n.tipo}</span>
+        {notifiche.length === 0 ? (
+          <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessuna notifica ancora inviata.</div>
+        ) : (
+          <div className="flex flex-col divide-y divide-border overflow-hidden rounded-2xl glass">
+            {notifiche.map((n) => (
+              <div key={n.id} className="p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold">{n.titolo}</p>
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{n.tipo}</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{n.corpo}</p>
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  {formatDateIt(n.creataIl)} · {formatTimeIt(n.creataIl)}
+                </p>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">{n.corpo}</p>
-              <p className="mt-1.5 text-[11px] text-muted-foreground">
-                {formatDateIt(n.quando)} · {formatTimeIt(n.quando)}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -17,13 +17,16 @@ export default function HallOfFamePage() {
   return (
     <Container className="flex flex-col gap-8 pt-6 sm:pt-10">
       <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient p-8 text-center sm:p-12">
-        <Crown className="mx-auto mb-3 size-9 text-gold-bright" />
-        <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-gold-bright">Albo d&apos;Oro</p>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-5xl">Hall of Fame</h1>
-        <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
-          La storia della Lega si scrive stagione dopo stagione. Qui vivono per sempre i campioni e i capocannonieri
-          che hanno reso grande il campionato.
-        </p>
+        <div className="bg-aurora absolute inset-0 opacity-50 mix-blend-screen" />
+        <div className="relative">
+          <Crown className="mx-auto mb-3 size-9 text-gold-bright" />
+          <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-gold-bright">Albo d&apos;Oro</p>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-5xl">Hall of Fame</h1>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
+            La storia della Lega si scrive stagione dopo stagione. Qui vivono per sempre i campioni e i capocannonieri
+            che hanno reso grande il campionato.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

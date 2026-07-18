@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { AdminMatchControl } from "@/components/admin/admin-match-control";
 import { getPartite, getPartitaById, getSquadraById, getGiocatoriDellaSquadra } from "@/lib/data";
 
@@ -37,7 +36,6 @@ export default async function AdminPartitaDetailPage({ params }: { params: Promi
           {casa.nomeBreve} vs {trasferta.nomeBreve}
         </h1>
       </div>
-      <DemoBanner />
       <AdminShell>
         <AdminMatchControl partita={partita} casa={casa} trasferta={trasferta} rosterCasa={rosterCasa} rosterTrasferta={rosterTrasferta} />
       </AdminShell>

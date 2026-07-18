@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   getSquadre,
   getSquadraBySlug,
+  getSquadraById,
   getGiocatoriDellaSquadra,
   getRigaClassifica,
   getUltimeCinquePartiteSquadra,
@@ -45,6 +46,7 @@ export default async function SquadraDetailPage({ params }: { params: Promise<{ 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">
+        <div className="bg-aurora absolute inset-0 opacity-50 mix-blend-screen" />
         <PitchBackdrop />
         <StadiumLights />
         <div className="relative flex flex-col items-center gap-4 px-6 py-10 text-center sm:flex-row sm:items-end sm:text-left">
@@ -119,7 +121,14 @@ export default async function SquadraDetailPage({ params }: { params: Promise<{ 
           <section>
             <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Ultimi risultati</h2>
             <div className="flex flex-col gap-3">
-              {ultime.length ? ultime.map((p) => <MatchCard key={p.id} partita={p} />) : (
+              {ultime.length ? ultime.map((p) => (
+                <MatchCard
+                  key={p.id}
+                  partita={p}
+                  casa={getSquadraById(p.squadraCasaId)!}
+                  trasferta={getSquadraById(p.squadraTrasfertaId)!}
+                />
+              )) : (
                 <p className="text-sm text-muted-foreground">Nessun risultato disponibile.</p>
               )}
             </div>

@@ -38,8 +38,8 @@ export function StadiumLights({ className }: { className?: string }) {
     <svg viewBox="0 0 800 400" className={cn("pointer-events-none absolute inset-0 h-full w-full", className)} aria-hidden>
       <defs>
         <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f3d16b" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="#f3d16b" stopOpacity="0" />
+          <stop offset="0%" stopColor="#f6dd9a" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#f6dd9a" stopOpacity="0" />
         </linearGradient>
       </defs>
       <polygon points="60,0 220,0 340,400 -60,400" fill="url(#beam)" />
@@ -53,25 +53,25 @@ export function LegaMonogram({ size = 32, className }: { size?: number; classNam
     <svg viewBox="0 0 100 100" width={size} height={size} className={className} aria-label="Lega Calcio Over 40" role="img">
       <defs>
         <linearGradient id="mono-g" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#22e07a" />
-          <stop offset="100%" stopColor="#16a34a" />
+          <stop offset="0%" stopColor="#34e88a" />
+          <stop offset="100%" stopColor="#0f9c52" />
         </linearGradient>
         <linearGradient id="mono-gold" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f3d16b" />
-          <stop offset="100%" stopColor="#d9b84a" />
+          <stop offset="0%" stopColor="#f6dd9a" />
+          <stop offset="100%" stopColor="#a3812f" />
         </linearGradient>
       </defs>
       <path
         d="M50 3 L94 20 V50 C94 76 76 92 50 97 C24 92 6 76 6 50 V20 Z"
-        fill="#0b100c"
+        fill="#0d100e"
         stroke="url(#mono-gold)"
         strokeWidth="2.5"
       />
       <path d="M50 3 L94 20 V50 C94 76 76 92 50 97 C24 92 6 76 6 50 V20 Z" fill="url(#mono-g)" opacity="0.12" />
-      <text x="50" y="46" textAnchor="middle" fontFamily="var(--font-display, sans-serif)" fontWeight="800" fontSize="30" fill="url(#mono-gold)">
+      <text x="50" y="46" textAnchor="middle" fontFamily="var(--font-display, serif)" fontWeight="700" fontSize="30" fill="url(#mono-gold)">
         O40
       </text>
-      <text x="50" y="76" textAnchor="middle" fontFamily="var(--font-score, sans-serif)" fontWeight="700" fontSize="13" letterSpacing="2" fill="#f4f7f4">
+      <text x="50" y="76" textAnchor="middle" fontFamily="var(--font-score, sans-serif)" fontWeight="700" fontSize="13" letterSpacing="2" fill="#f6f5f0">
         LEGA
       </text>
     </svg>

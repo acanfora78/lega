@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { AdminNewsTable } from "@/components/admin/admin-news-table";
 import { getArticoli } from "@/lib/data";
 
@@ -14,7 +13,6 @@ export default function AdminNewsPage() {
         <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-gold-bright">Area Organizzatore</p>
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">News &amp; Comunicati</h1>
       </div>
-      <DemoBanner />
       <AdminShell>
         <AdminNewsTable articoli={getArticoli()} />
       </AdminShell>

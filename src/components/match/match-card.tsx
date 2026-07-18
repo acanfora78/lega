@@ -2,14 +2,21 @@ import Link from "next/link";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { LiveBadge } from "@/components/shared/live-badge";
 import { Badge } from "@/components/ui/badge";
-import { getSquadraById } from "@/lib/data";
 import { formatDateIt, formatTimeIt, cn } from "@/lib/utils";
-import type { Partita } from "@/lib/types";
+import type { Partita, Squadra } from "@/lib/types";
 import { Star } from "lucide-react";
 
-export function MatchCard({ partita, className }: { partita: Partita; className?: string }) {
-  const casa = getSquadraById(partita.squadraCasaId)!;
-  const trasferta = getSquadraById(partita.squadraTrasfertaId)!;
+export function MatchCard({
+  partita,
+  casa,
+  trasferta,
+  className,
+}: {
+  partita: Partita;
+  casa: Squadra;
+  trasferta: Squadra;
+  className?: string;
+}) {
   const isLive = partita.stato === "live" || partita.stato === "intervallo";
   const isConclusa = partita.stato === "conclusa";
   const isProgrammata = partita.stato === "programmata";
@@ -18,7 +25,7 @@ export function MatchCard({ partita, className }: { partita: Partita; className?
     <Link
       href={`/partite/${partita.id}`}
       className={cn(
-        "group block rounded-2xl glass p-4 transition-all duration-300 hover:border-primary-glow/30 hover:bg-white/[0.05] active:scale-[0.99]",
+        "group block rounded-2xl glass card-luxury p-4 transition-all duration-300 hover:border-primary-glow/30 hover:bg-white/[0.05] active:scale-[0.99]",
         isLive && "border-live/30 shadow-[0_0_0_1px_rgba(239,68,68,0.15),0_8px_30px_-10px_rgba(239,68,68,0.35)]",
         className
       )}

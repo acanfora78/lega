@@ -7,18 +7,26 @@ import { PitchBackdrop, StadiumLights } from "@/components/brand/pitch-art";
 import { Countdown } from "@/components/shared/countdown";
 import { LiveBadge } from "@/components/shared/live-badge";
 import { Button } from "@/components/ui/button";
-import { getSquadraById, getStagioneAttuale } from "@/lib/data";
 import { formatDateIt, formatTimeIt } from "@/lib/utils";
-import type { Partita } from "@/lib/types";
+import type { Partita, Squadra, Stagione } from "@/lib/types";
 import { CloudSun, MapPin, Radio } from "lucide-react";
 
-export function Hero({ partita, live }: { partita: Partita; live: boolean }) {
-  const casa = getSquadraById(partita.squadraCasaId)!;
-  const trasferta = getSquadraById(partita.squadraTrasfertaId)!;
-  const stagione = getStagioneAttuale();
-
+export function Hero({
+  partita,
+  live,
+  casa,
+  trasferta,
+  stagione,
+}: {
+  partita: Partita;
+  live: boolean;
+  casa: Squadra;
+  trasferta: Squadra;
+  stagione: Stagione;
+}) {
   return (
     <div className="relative overflow-hidden rounded-3xl bg-pitch-gradient">
+      <div className="bg-aurora absolute inset-0 opacity-50 mix-blend-screen" />
       <PitchBackdrop />
       <StadiumLights />
       <div className="relative px-5 py-8 sm:px-10 sm:py-12">

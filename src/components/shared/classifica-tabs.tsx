@@ -4,8 +4,7 @@ import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StandingsTable } from "@/components/shared/standings-table";
 import { TeamCrest } from "@/components/brand/team-crest";
-import { getSquadraById } from "@/lib/data";
-import type { RigaClassifica } from "@/lib/types";
+import type { RigaClassifica, Squadra } from "@/lib/types";
 
 export function ClassificaTabs({
   generale,
@@ -14,6 +13,7 @@ export function ClassificaTabs({
   attacco,
   difesa,
   fairPlay,
+  squadre,
 }: {
   generale: RigaClassifica[];
   casa: RigaClassifica[];
@@ -21,6 +21,7 @@ export function ClassificaTabs({
   attacco: RigaClassifica[];
   difesa: RigaClassifica[];
   fairPlay: RigaClassifica[];
+  squadre: Squadra[];
 }) {
   return (
     <Tabs defaultValue="generale">
@@ -34,28 +35,29 @@ export function ClassificaTabs({
       </TabsList>
 
       <TabsContent value="generale" className="mt-5">
-        <StandingsTable righe={generale} />
+        <StandingsTable righe={generale} squadre={squadre} />
       </TabsContent>
       <TabsContent value="casa" className="mt-5">
-        <StandingsTable righe={casa} compact />
+        <StandingsTable righe={casa} squadre={squadre} compact />
       </TabsContent>
       <TabsContent value="trasferta" className="mt-5">
-        <StandingsTable righe={trasferta} compact />
+        <StandingsTable righe={trasferta} squadre={squadre} compact />
       </TabsContent>
       <TabsContent value="attacco" className="mt-5">
-        <StandingsTable righe={attacco} />
+        <StandingsTable righe={attacco} squadre={squadre} />
       </TabsContent>
       <TabsContent value="difesa" className="mt-5">
-        <StandingsTable righe={difesa} />
+        <StandingsTable righe={difesa} squadre={squadre} />
       </TabsContent>
       <TabsContent value="fairplay" className="mt-5">
-        <FairPlayTable righe={fairPlay} />
+        <FairPlayTable righe={fairPlay} squadre={squadre} />
       </TabsContent>
     </Tabs>
   );
 }
 
-function FairPlayTable({ righe }: { righe: RigaClassifica[] }) {
+function FairPlayTable({ righe, squadre }: { righe: RigaClassifica[]; squadre: Squadra[] }) {
+  const mappa = new Map(squadre.map((s) => [s.id, s]));
   return (
     <div className="overflow-x-auto rounded-2xl glass">
       <table className="w-full min-w-[480px] border-collapse text-sm">
@@ -70,7 +72,7 @@ function FairPlayTable({ righe }: { righe: RigaClassifica[] }) {
         </thead>
         <tbody>
           {righe.map((r, idx) => (
-            <FairPlayRow key={r.squadraId} riga={r} posizione={idx + 1} />
+            <FairPlayRow key={r.squadraId} riga={r} posizione={idx + 1} squadra={mappa.get(r.squadraId)} />
           ))}
         </tbody>
       </table>
@@ -78,8 +80,7 @@ function FairPlayTable({ righe }: { righe: RigaClassifica[] }) {
   );
 }
 
-function FairPlayRow({ riga, posizione }: { riga: RigaClassifica; posizione: number }) {
-  const squadra = getSquadraById(riga.squadraId);
+function FairPlayRow({ riga, posizione, squadra }: { riga: RigaClassifica; posizione: number; squadra?: Squadra }) {
   if (!squadra) return null;
   return (
     <tr className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">

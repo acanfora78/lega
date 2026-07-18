@@ -19,7 +19,7 @@ export function NewsCard({ articolo, featured = false }: { articolo: Articolo; f
     <Link
       href={`/news/${articolo.slug}`}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl glass transition-all duration-300 hover:border-primary-glow/30",
+        "group relative flex flex-col overflow-hidden rounded-2xl glass card-luxury transition-all duration-300 hover:border-primary-glow/30",
         featured ? "min-h-[280px]" : "min-h-[160px]"
       )}
     >

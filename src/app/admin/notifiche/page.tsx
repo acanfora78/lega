@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { DemoBanner } from "@/components/admin/demo-banner";
 import { AdminNotificheComposer } from "@/components/admin/admin-notifiche-composer";
+import { getNotifiche } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Notifiche Push" };
 
@@ -14,9 +14,8 @@ export default function AdminNotifichePage() {
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Notifiche Push</h1>
         <p className="mt-1 text-sm text-muted-foreground">Invia comunicazioni istantanee a tutti i tifosi della Lega.</p>
       </div>
-      <DemoBanner />
       <AdminShell>
-        <AdminNotificheComposer />
+        <AdminNotificheComposer notifiche={getNotifiche()} />
       </AdminShell>
     </Container>
   );

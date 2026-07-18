@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,53 +14,72 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import type { Sponsor } from "@/lib/types";
 
 export function AdminSponsorGrid({ sponsor }: { sponsor: Sponsor[] }) {
-  const [lista, setLista] = useState(sponsor);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
 
-  function salva(form: FormData) {
-    const nuovo: Sponsor = {
-      id: `sp-${Date.now()}`,
-      nome: String(form.get("nome") ?? ""),
-      logoUrl: "",
-      livello: form.get("livello") as Sponsor["livello"],
-      descrizione: String(form.get("descrizione") ?? ""),
-    };
-    setLista((prev) => [nuovo, ...prev]);
-    toast.success("Sponsor aggiunto");
-    setOpen(false);
+  async function salva(form: FormData) {
+    try {
+      const res = await fetch("/api/admin/sponsor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: String(form.get("nome") ?? ""),
+          livello: form.get("livello"),
+          descrizione: String(form.get("descrizione") ?? ""),
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Sponsor aggiunto");
+      setOpen(false);
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile aggiungere lo sponsor");
+    }
   }
 
-  function elimina(id: string) {
-    setLista((prev) => prev.filter((s) => s.id !== id));
-    toast.success("Sponsor rimosso");
+  async function elimina(id: string) {
+    try {
+      const res = await fetch(`/api/admin/sponsor/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Sponsor rimosso");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile rimuovere lo sponsor");
+    }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-2">
+        {isPending && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
         <Button size="sm" onClick={() => setOpen(true)}>
           <Plus className="size-4" /> Nuovo sponsor
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {lista.map((s) => (
-          <Card key={s.id}>
-            <CardContent className="flex items-start justify-between gap-3 p-4">
-              <div>
-                <p className="text-sm font-bold">{s.nome}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{s.descrizione}</p>
-                <Badge variant={s.livello === "platinum" ? "gold" : "outline"} className="mt-2 capitalize">
-                  {s.livello}
-                </Badge>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => elimina(s.id)} aria-label="Rimuovi">
-                <Trash2 className="size-4 text-danger" />
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {sponsor.length === 0 ? (
+        <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessuno sponsor ancora registrato.</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {sponsor.map((s) => (
+            <Card key={s.id}>
+              <CardContent className="flex items-start justify-between gap-3 p-4">
+                <div>
+                  <p className="text-sm font-bold">{s.nome}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{s.descrizione}</p>
+                  <Badge variant={s.livello === "platinum" ? "gold" : "outline"} className="mt-2 capitalize">
+                    {s.livello}
+                  </Badge>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => elimina(s.id)} aria-label="Rimuovi">
+                  <Trash2 className="size-4 text-danger" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

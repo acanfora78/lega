@@ -9,7 +9,7 @@ import { MatchInfo } from "@/components/match/match-info";
 import { MatchChat } from "@/components/match/match-chat";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getPartite, getPartitaById, getSquadraById } from "@/lib/data";
+import { getPartite, getPartitaById, getSquadraById, getGiocatoriDellaSquadra } from "@/lib/data";
 
 export function generateStaticParams() {
   return getPartite().map((p) => ({ id: p.id }));
@@ -33,6 +33,7 @@ export default async function PartitaDetailPage({ params }: { params: Promise<{ 
   const trasferta = getSquadraById(partita.squadraTrasfertaId)!;
   const isLive = partita.stato === "live" || partita.stato === "intervallo";
   const haFormazioni = Boolean(partita.formazioneCasa && partita.formazioneTrasferta);
+  const giocatoriCoinvolti = [...getGiocatoriDellaSquadra(casa.id), ...getGiocatoriDellaSquadra(trasferta.id)];
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
@@ -50,7 +51,7 @@ export default async function PartitaDetailPage({ params }: { params: Promise<{ 
         <TabsContent value="cronaca" className="mt-5">
           <Card>
             <CardContent className="p-5">
-              <MatchTimeline partita={partita} />
+              <MatchTimeline partita={partita} squadre={[casa, trasferta]} giocatori={giocatoriCoinvolti} />
             </CardContent>
           </Card>
         </TabsContent>

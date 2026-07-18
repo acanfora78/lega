@@ -1,19 +1,23 @@
+import { useMemo } from "react";
 import Link from "next/link";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { TeamCrest } from "@/components/brand/team-crest";
-import { getSquadraById } from "@/lib/data";
-import type { Giocatore } from "@/lib/types";
+import type { Giocatore, Squadra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function Leaderboard({
   items,
   unit,
   secondary,
+  squadre,
 }: {
   items: { giocatore: Giocatore; value: number | string }[];
   unit: string;
   secondary?: (g: Giocatore) => string;
+  squadre: Squadra[];
 }) {
+  const squadreMap = useMemo(() => new Map(squadre.map((s) => [s.id, s])), [squadre]);
+
   if (!items.length) {
     return <div className="rounded-2xl glass p-8 text-center text-sm text-muted-foreground">Nessun dato disponibile per questa categoria.</div>;
   }
@@ -21,7 +25,7 @@ export function Leaderboard({
   return (
     <div className="overflow-hidden rounded-2xl glass">
       {items.map(({ giocatore, value }, idx) => {
-        const squadra = getSquadraById(giocatore.squadraId);
+        const squadra = squadreMap.get(giocatore.squadraId);
         return (
           <Link
             key={giocatore.id}

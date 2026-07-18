@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Leaderboard } from "@/components/statistiche/leaderboard";
-import type { Giocatore } from "@/lib/types";
+import type { Giocatore, Squadra } from "@/lib/types";
 
 type Voce = { giocatore: Giocatore; value: number };
 
@@ -15,6 +15,7 @@ export function StatisticheTabs({
   espulsi,
   presenze,
   mvp,
+  squadre,
 }: {
   marcatori: Voce[];
   assist: Voce[];
@@ -24,6 +25,7 @@ export function StatisticheTabs({
   espulsi: Voce[];
   presenze: Voce[];
   mvp: Voce[];
+  squadre: Squadra[];
 }) {
   return (
     <Tabs defaultValue="marcatori">
@@ -39,28 +41,28 @@ export function StatisticheTabs({
       </TabsList>
 
       <TabsContent value="marcatori" className="mt-5">
-        <Leaderboard items={marcatori} unit="gol" />
+        <Leaderboard items={marcatori} unit="gol" squadre={squadre} />
       </TabsContent>
       <TabsContent value="assist" className="mt-5">
-        <Leaderboard items={assist} unit="assist" />
+        <Leaderboard items={assist} unit="assist" squadre={squadre} />
       </TabsContent>
       <TabsContent value="portieri" className="mt-5">
-        <Leaderboard items={portieri} unit="gol subiti" />
+        <Leaderboard items={portieri} unit="gol subiti" squadre={squadre} />
       </TabsContent>
       <TabsContent value="cleansheet" className="mt-5">
-        <Leaderboard items={cleanSheet} unit="clean sheet" />
+        <Leaderboard items={cleanSheet} unit="clean sheet" squadre={squadre} />
       </TabsContent>
       <TabsContent value="presenze" className="mt-5">
-        <Leaderboard items={presenze} unit="presenze" />
+        <Leaderboard items={presenze} unit="presenze" squadre={squadre} />
       </TabsContent>
       <TabsContent value="ammoniti" className="mt-5">
-        <Leaderboard items={ammoniti} unit="gialli" />
+        <Leaderboard items={ammoniti} unit="gialli" squadre={squadre} />
       </TabsContent>
       <TabsContent value="espulsi" className="mt-5">
-        <Leaderboard items={espulsi} unit="rossi" />
+        <Leaderboard items={espulsi} unit="rossi" squadre={squadre} />
       </TabsContent>
       <TabsContent value="mvp" className="mt-5">
-        <Leaderboard items={mvp} unit="MVP" />
+        <Leaderboard items={mvp} unit="MVP" squadre={squadre} />
       </TabsContent>
     </Tabs>
   );

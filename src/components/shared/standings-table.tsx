@@ -1,21 +1,24 @@
 import Link from "next/link";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { FormBadges } from "@/components/shared/form-badges";
-import { getSquadraById } from "@/lib/data";
-import type { RigaClassifica } from "@/lib/types";
+import type { RigaClassifica, Squadra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function StandingsTable({
   righe,
+  squadre,
   highlightTop = 2,
   highlightBottom = 1,
   compact = false,
 }: {
   righe: RigaClassifica[];
+  squadre: Squadra[];
   highlightTop?: number;
   highlightBottom?: number;
   compact?: boolean;
 }) {
+  const mappa = new Map(squadre.map((s) => [s.id, s]));
+
   return (
     <div className="relative rounded-2xl glass">
       <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 rounded-r-2xl bg-gradient-to-l from-surface/90 to-transparent sm:hidden" />
@@ -42,7 +45,7 @@ export function StandingsTable({
         </thead>
         <tbody>
           {righe.map((r, idx) => {
-            const squadra = getSquadraById(r.squadraId);
+            const squadra = mappa.get(r.squadraId);
             if (!squadra) return null;
             const isTop = idx < highlightTop;
             const isBottom = idx >= righe.length - highlightBottom;

@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, Shield, User2, CalendarDays, Newspaper, Handshake } from "lucide-react";
+import { Search, Shield, User2, CalendarDays, Newspaper, Handshake, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { ricercaGlobale, type RisultatoRicerca } from "@/lib/data/search";
+import type { RisultatoRicerca } from "@/lib/data/search";
 
 const ICONE: Record<RisultatoRicerca["tipo"], typeof Shield> = {
   squadra: Shield,
@@ -16,7 +16,23 @@ const ICONE: Record<RisultatoRicerca["tipo"], typeof Shield> = {
 
 export function SearchExplorer() {
   const [query, setQuery] = useState("");
-  const risultati = useMemo(() => ricercaGlobale(query), [query]);
+  const [risultati, setRisultati] = useState<RisultatoRicerca[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- avvia lo stato di caricamento della ricerca debounced lato server
+    setLoading(true);
+    const id = setTimeout(() => {
+      fetch(`/api/ricerca?q=${encodeURIComponent(q)}`)
+        .then((res) => res.json())
+        .then((data) => setRisultati(data))
+        .catch(() => setRisultati([]))
+        .finally(() => setLoading(false));
+    }, 200);
+    return () => clearTimeout(id);
+  }, [query]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -29,13 +45,14 @@ export function SearchExplorer() {
           placeholder="Cerca squadre, giocatori, partite, news..."
           className="h-13 pl-11 text-base"
         />
+        {loading && <Loader2 className="absolute right-4 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
       </div>
 
       {query.trim() === "" ? (
         <p className="rounded-2xl glass p-8 text-center text-sm text-muted-foreground">
-          Inizia a digitare per esplorare l&apos;intero universo della Lega Calcio Over 40.
+          Inizia a digitare per esplorare l&apos;intero universo della Lega.
         </p>
-      ) : risultati.length === 0 ? (
+      ) : risultati.length === 0 && !loading ? (
         <p className="rounded-2xl glass p-8 text-center text-sm text-muted-foreground">Nessun risultato per &quot;{query}&quot;.</p>
       ) : (
         <div className="flex flex-col divide-y divide-border overflow-hidden rounded-2xl glass">

@@ -12,6 +12,7 @@ import {
   getMigliorDifesa,
   getClassificaFairPlay,
   getStagioneAttuale,
+  getSquadre,
 } from "@/lib/data";
 import { Trophy, ShieldCheck } from "lucide-react";
 
@@ -64,6 +65,7 @@ export default function ClassificaPage() {
             attacco={getMigliorAttacco()}
             difesa={getMigliorDifesa()}
             fairPlay={getClassificaFairPlay()}
+            squadre={getSquadre()}
           />
         </>
       )}

@@ -1,0 +1,31 @@
+import { createClient } from "@/lib/supabase/server";
+
+/**
+ * Verifica che la richiesta provenga da un utente con ruolo "organizzatore".
+ * Se Supabase non è configurato in questo ambiente, consente l'operazione
+ * (coerente con il resto dell'app in modalità locale/sviluppo) — appena le
+ * variabili Supabase sono impostate, il controllo diventa reale e vincolante.
+ */
+export async function requireOrganizzatore(): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return { ok: true };
+  }
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return { ok: false, status: 401, message: "Accesso richiesto." };
+
+    const ruolo = (user.app_metadata as { role?: string } | undefined)?.role;
+    if (ruolo !== "organizzatore") {
+      return { ok: false, status: 403, message: "Permessi insufficienti." };
+    }
+
+    return { ok: true };
+  } catch {
+    return { ok: false, status: 500, message: "Impossibile verificare l'autenticazione." };
+  }
+}
