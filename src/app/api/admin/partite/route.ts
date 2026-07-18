@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaPartita, getStore } from "@/lib/store/file-store";
 import type { Partita } from "@/lib/types";
@@ -36,5 +37,6 @@ export async function POST(request: Request) {
   };
 
   await creaPartita(partita);
+  revalidatePath("/", "layout");
   return NextResponse.json(partita, { status: 201 });
 }

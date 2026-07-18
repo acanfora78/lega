@@ -63,10 +63,14 @@ export const metadata: Metadata = {
   },
 };
 
-// I dati della Lega vivono nello store server-side (file o Supabase) e cambiano
-// ad ogni azione dell'area organizzatore: nessuna pagina va prerenderizzata in
-// modo statico a build time, altrimenti mostrerebbe uno snapshot obsoleto.
-export const dynamic = "force-dynamic";
+// Le pagine sono cache-abili (letture pubbliche via client Supabase senza
+// cookie, vedi src/lib/supabase/read-only.ts): ogni azione dell'area
+// organizzatore invalida la cache subito dopo la scrittura (revalidatePath
+// nelle route sotto src/app/api/admin/*), quindi i visitatori vedono sempre
+// dati aggiornati senza dover rifare una query live ad ogni click. Il timer
+// qui sotto è solo un tetto massimo di sicurezza in caso di scritture dirette
+// sul database che non passano dalle API (es. modifiche manuali via SQL).
+export const revalidate = 300;
 
 export const viewport: Viewport = {
   themeColor: "#060907",

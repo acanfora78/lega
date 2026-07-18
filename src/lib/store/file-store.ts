@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { cache } from "react";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
+import { createReadOnlyClient } from "@/lib/supabase/read-only";
 import type {
   AlbumMedia,
   Articolo,
@@ -129,7 +130,7 @@ function statoIniziale(): LegaData {
 // ---------------------------------------------------------------------------
 async function loadFromSupabase(): Promise<LegaData> {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createReadOnlyClient();
     const { data, error } = await supabase.from("lega_store").select("data").eq("id", 1).maybeSingle();
     if (error) throw error;
     if (!data) return statoIniziale();

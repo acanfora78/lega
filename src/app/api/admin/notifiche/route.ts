@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { inviaNotifica } from "@/lib/store/file-store";
 import type { Notifica } from "@/lib/types";
@@ -22,5 +23,6 @@ export async function POST(request: Request) {
   };
 
   await inviaNotifica(notifica);
+  revalidatePath("/", "layout");
   return NextResponse.json(notifica, { status: 201 });
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { eliminaSponsor } from "@/lib/store/file-store";
 
@@ -8,5 +9,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   await eliminaSponsor(id);
+  revalidatePath("/", "layout");
   return NextResponse.json({ ok: true });
 }

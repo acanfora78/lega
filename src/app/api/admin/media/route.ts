@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaAlbum } from "@/lib/store/file-store";
 import type { AlbumMedia } from "@/lib/types";
@@ -19,5 +20,6 @@ export async function POST(request: Request) {
   };
 
   await creaAlbum(album);
+  revalidatePath("/", "layout");
   return NextResponse.json(album, { status: 201 });
 }

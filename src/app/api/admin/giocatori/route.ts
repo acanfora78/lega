@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaGiocatore } from "@/lib/store/file-store";
 import type { Giocatore, Ruolo } from "@/lib/types";
@@ -38,5 +39,6 @@ export async function POST(request: Request) {
   };
 
   await creaGiocatore(giocatore);
+  revalidatePath("/", "layout");
   return NextResponse.json(giocatore, { status: 201 });
 }

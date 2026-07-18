@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { aggiornaSquadra, eliminaSquadra } from "@/lib/store/file-store";
 
@@ -10,6 +11,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const patch = await request.json();
   const aggiornata = await aggiornaSquadra(id, patch);
   if (!aggiornata) return NextResponse.json({ error: "Squadra non trovata." }, { status: 404 });
+  revalidatePath("/", "layout");
   return NextResponse.json(aggiornata);
 }
 
@@ -19,5 +21,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   await eliminaSquadra(id);
+  revalidatePath("/", "layout");
   return NextResponse.json({ ok: true });
 }
