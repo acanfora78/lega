@@ -117,24 +117,50 @@ function statoIniziale(): LegaData {
 // cache a livello di modulo non sarebbe condivisa tra le due copie e le scritture
 // di un endpoint admin non comparirebbero nelle pagine finché non si rilegge da
 // disco. Si legge quindi sempre il file per garantire uno stato coerente.
+//
+// Su filesystem in sola lettura (es. funzioni serverless di Vercel/Netlify, dove
+// solo /tmp è scrivibile) mkdir/writeFile falliscono: qui non deve mai far
+// crashare il render della pagina, quindi si degrada a stato iniziale in
+// memoria (nessuna persistenza) invece di lanciare un'eccezione non gestita.
+let filesystemScrivibile = true;
+
 function load(): LegaData {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) {
-    const iniziale = statoIniziale();
-    fs.writeFileSync(DATA_FILE, JSON.stringify(iniziale, null, 2), "utf-8");
-    return iniziale;
-  }
+  if (!filesystemScrivibile) return statoIniziale();
   try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(DATA_FILE)) {
+      const iniziale = statoIniziale();
+      fs.writeFileSync(DATA_FILE, JSON.stringify(iniziale, null, 2), "utf-8");
+      return iniziale;
+    }
     const raw = fs.readFileSync(DATA_FILE, "utf-8");
     return { ...statoIniziale(), ...JSON.parse(raw) };
-  } catch {
+  } catch (err) {
+    if (isFilesystemReadOnly(err)) {
+      filesystemScrivibile = false;
+      console.warn(
+        "[file-store] Filesystem di sola lettura (tipico di hosting serverless come Vercel/Netlify): " +
+          "la persistenza reale richiede Supabase o un hosting con disco persistente. " +
+          "Vedi il README, sezione 'Passare a Supabase in produzione'."
+      );
+    }
     return statoIniziale();
   }
 }
 
 function persist(data: LegaData) {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+  if (!filesystemScrivibile) return;
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch (err) {
+    if (isFilesystemReadOnly(err)) filesystemScrivibile = false;
+  }
+}
+
+function isFilesystemReadOnly(err: unknown): boolean {
+  const code = (err as NodeJS.ErrnoException)?.code;
+  return code === "EROFS" || code === "EACCES" || code === "EPERM" || code === "ENOENT";
 }
 
 // ---------------------------------------------------------------------------
