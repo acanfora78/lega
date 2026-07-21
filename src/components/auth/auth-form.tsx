@@ -10,7 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
-export function AuthForm({ mode }: { mode: "login" | "signup" }) {
+// Destinazione sicura per il redirect "next": solo percorsi interni relativi,
+// mai un URL assoluto (evita open-redirect verso domini esterni).
+function destinazioneSicura(next: string | undefined) {
+  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  return undefined;
+}
+
+export function AuthForm({ mode, next }: { mode: "login" | "signup"; next?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [nome, setNome] = useState("");
@@ -28,15 +35,21 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     setLoading(true);
     try {
       const supabase = createClient();
+      const destinazione = destinazioneSicura(next);
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        const ruolo = (data.user?.app_metadata as { role?: string } | undefined)?.role;
+        toast.success("Accesso effettuato");
+        // L'organizzatore atterra direttamente nella sua area dedicata invece
+        // che nel profilo tifoso generico.
+        router.push(ruolo === "organizzatore" ? (destinazione ?? "/admin") : (destinazione ?? "/profilo"));
       } else {
         const { error } = await supabase.auth.signUp({ email, password, options: { data: { nome } } });
         if (error) throw error;
+        toast.success("Registrazione completata");
+        router.push(destinazione ?? "/profilo");
       }
-      toast.success(mode === "login" ? "Accesso effettuato" : "Registrazione completata");
-      router.push("/profilo");
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Si è verificato un errore");

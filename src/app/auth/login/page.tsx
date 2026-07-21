@@ -6,7 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata: Metadata = { title: "Accedi" };
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const { next } = await searchParams;
   return (
     <Container className="flex flex-col items-center gap-6 pt-16">
       <LegaMonogram size={56} />
@@ -16,7 +17,7 @@ export default function LoginPage() {
       </div>
       <Card className="w-full max-w-sm">
         <CardContent className="p-6">
-          <AuthForm mode="login" />
+          <AuthForm mode="login" next={next} />
         </CardContent>
       </Card>
     </Container>
