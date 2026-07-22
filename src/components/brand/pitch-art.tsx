@@ -50,30 +50,14 @@ export function StadiumLights({ className }: { className?: string }) {
 
 export function LegaMonogram({ size = 32, className }: { size?: number; className?: string }) {
   return (
-    <svg viewBox="0 0 100 100" width={size} height={size} className={className} aria-label="Lega Calcio Over 40" role="img">
-      <defs>
-        <linearGradient id="mono-g" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#34e88a" />
-          <stop offset="100%" stopColor="#0f9c52" />
-        </linearGradient>
-        <linearGradient id="mono-gold" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f6dd9a" />
-          <stop offset="100%" stopColor="#a3812f" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M50 3 L94 20 V50 C94 76 76 92 50 97 C24 92 6 76 6 50 V20 Z"
-        fill="#0d100e"
-        stroke="url(#mono-gold)"
-        strokeWidth="2.5"
-      />
-      <path d="M50 3 L94 20 V50 C94 76 76 92 50 97 C24 92 6 76 6 50 V20 Z" fill="url(#mono-g)" opacity="0.12" />
-      <text x="50" y="46" textAnchor="middle" fontFamily="var(--font-display, serif)" fontWeight="700" fontSize="30" fill="url(#mono-gold)">
-        O40
-      </text>
-      <text x="50" y="76" textAnchor="middle" fontFamily="var(--font-score, sans-serif)" fontWeight="700" fontSize="13" letterSpacing="2" fill="#f6f5f0">
-        LEGA
-      </text>
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element -- logo ufficiale statico servito da /public, next/image non serve qui
+    <img
+      src="/icons/logo.png"
+      alt="Lega Calcio Over 40"
+      width={size}
+      height={size}
+      className={cn("shrink-0 rounded-2xl object-cover", className)}
+      style={{ width: size, height: size }}
+    />
   );
 }

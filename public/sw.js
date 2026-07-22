@@ -1,5 +1,5 @@
-const CACHE_VERSION = "lega-over40-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon.svg", "/icons/icon-192.png"];
+const CACHE_VERSION = "lega-over40-v2";
+const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/logo.png", "/icons/icon-192.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
