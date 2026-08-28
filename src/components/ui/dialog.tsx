@@ -31,10 +31,19 @@ function DialogContent({
   return (
     <DialogPortal>
       <DialogOverlay />
+      {/*
+        max-h + overflow-y-auto: senza un tetto d'altezza, un modulo più alto
+        dello schermo (nome + due menu + eventuali box informativi + elenco
+        squadre, come "Nuova competizione") sborda oltre il viewport sia sopra
+        che sotto — e il pulsante di invio in fondo finisce irraggiungibile,
+        senza barra di scroll che lo segnali, esattamente come le colonne
+        Azioni delle tabelle. Qui il contenuto scorre dentro al dialog invece
+        che tentare di centrare un elemento più alto dello schermo intero.
+      */}
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "glass-strong fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "glass-strong fixed left-1/2 top-1/2 z-50 grid max-h-[85vh] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-2xl p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           className
         )}
         {...props}
