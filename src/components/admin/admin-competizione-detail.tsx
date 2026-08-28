@@ -104,16 +104,20 @@ export function AdminCompetizioneDetail({
           </div>
         ) : (
           <div className="overflow-hidden rounded-2xl glass">
+            {/* Fase, Data e Stato nascosti sotto sm invece di affidarsi allo
+                scroll orizzontale: su mobile uno scroll senza alcun indizio
+                visivo resta scoperto. Giornata, Sfida, Risultato e Gestisci
+                restano sempre visibili. */}
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] border-collapse text-sm">
+              <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                     <th className="px-4 py-3">Giornata</th>
-                    <th className="px-2 py-3">Fase</th>
-                    <th className="px-2 py-3">Data</th>
+                    <th className="hidden px-2 py-3 sm:table-cell">Fase</th>
+                    <th className="hidden px-2 py-3 sm:table-cell">Data</th>
                     <th className="px-2 py-3">Sfida</th>
                     <th className="px-2 py-3 text-center">Risultato</th>
-                    <th className="px-2 py-3 text-center">Stato</th>
+                    <th className="hidden px-2 py-3 text-center sm:table-cell">Stato</th>
                     <th className="px-4 py-3 text-right">Azioni</th>
                   </tr>
                 </thead>
@@ -128,8 +132,8 @@ export function AdminCompetizioneDetail({
                       return (
                         <tr key={p.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
                           <td className="px-4 py-3 font-semibold">G{p.giornata}</td>
-                          <td className="px-2 py-3 text-xs text-muted-foreground">{fase?.nome ?? "—"}</td>
-                          <td className="px-2 py-3 text-muted-foreground">
+                          <td className="hidden px-2 py-3 text-xs text-muted-foreground sm:table-cell">{fase?.nome ?? "—"}</td>
+                          <td className="hidden px-2 py-3 text-muted-foreground sm:table-cell">
                             {formatDateIt(p.dataOra)} · {formatTimeIt(p.dataOra)}
                           </td>
                           <td className="px-2 py-3">
@@ -144,7 +148,7 @@ export function AdminCompetizioneDetail({
                           <td className="px-2 py-3 text-center font-score font-bold tabular-nums">
                             {p.stato === "programmata" ? "—" : `${p.golCasa}-${p.golTrasferta}`}
                           </td>
-                          <td className="px-2 py-3 text-center">
+                          <td className="hidden px-2 py-3 text-center sm:table-cell">
                             <Badge variant={p.stato === "live" ? "live" : p.stato === "conclusa" ? "muted" : "outline"} className="capitalize">
                               {p.stato}
                             </Badge>
@@ -153,8 +157,9 @@ export function AdminCompetizioneDetail({
                             <Link
                               href={`/admin/partite/${p.id}`}
                               className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold hover:bg-white/[0.1]"
+                              aria-label="Gestisci partita"
                             >
-                              <Settings2 className="size-3.5" /> Gestisci
+                              <Settings2 className="size-3.5" /> <span className="hidden sm:inline">Gestisci</span>
                             </Link>
                           </td>
                         </tr>

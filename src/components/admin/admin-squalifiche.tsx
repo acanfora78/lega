@@ -147,15 +147,19 @@ export function AdminSqualifiche({
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl glass">
+          {/* Squadra, Motivo ed Emessa nascosti sotto sm invece di affidarsi
+              allo scroll orizzontale: su mobile uno scroll senza alcun
+              indizio visivo resta scoperto. Giocatore, Giornate, Stato e
+              Azioni restano sempre visibili. */}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-sm">
+            <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-4 py-3">Giocatore</th>
-                  <th className="px-2 py-3">Squadra</th>
+                  <th className="hidden px-2 py-3 sm:table-cell">Squadra</th>
                   <th className="px-2 py-3 text-center">Giornate</th>
-                  <th className="px-2 py-3">Motivo</th>
-                  <th className="px-2 py-3">Emessa</th>
+                  <th className="hidden px-2 py-3 sm:table-cell">Motivo</th>
+                  <th className="hidden px-2 py-3 sm:table-cell">Emessa</th>
                   <th className="px-2 py-3 text-center">Stato</th>
                   <th className="px-4 py-3 text-right">Azioni</th>
                 </tr>
@@ -168,12 +172,12 @@ export function AdminSqualifiche({
                       <td className="px-4 py-3 font-semibold">
                         {s.giocatore ? `${s.giocatore.nome} ${s.giocatore.cognome}` : "—"}
                       </td>
-                      <td className="px-2 py-3 text-muted-foreground">{squadra?.nomeBreve ?? "—"}</td>
+                      <td className="hidden px-2 py-3 text-muted-foreground sm:table-cell">{squadra?.nomeBreve ?? "—"}</td>
                       <td className="px-2 py-3 text-center font-score font-bold tabular-nums">{s.giornate}</td>
-                      <td className="px-2 py-3 text-xs text-muted-foreground">
+                      <td className="hidden px-2 py-3 text-xs text-muted-foreground sm:table-cell">
                         {MOTIVI.find((m) => m.value === s.motivo)?.label ?? s.motivo}
                       </td>
-                      <td className="px-2 py-3 text-xs text-muted-foreground">{formatDateIt(s.emessaIl)}</td>
+                      <td className="hidden px-2 py-3 text-xs text-muted-foreground sm:table-cell">{formatDateIt(s.emessaIl)}</td>
                       <td className="px-2 py-3 text-center">
                         {s.attiva ? (
                           <Badge variant="danger">

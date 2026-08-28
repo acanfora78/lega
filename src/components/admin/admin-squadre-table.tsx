@@ -101,19 +101,19 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessuna squadra ancora registrata.</div>
       ) : (
         <div className="overflow-hidden rounded-2xl glass">
-          {/* overflow-x-auto qui, non solo sul contenitore esterno: senza
-              questo la tabella (min-w 640px) sborda sotto i 640px di
-              larghezza e la colonna Azioni — con Modifica/Elimina — finisce
-              tagliata via, invisibile e irraggiungibile, invece che
-              raggiungibile scorrendo. Su schermo da telefono succede sempre. */}
+          {/* Niente min-width + scroll orizzontale: su mobile uno scroll
+              nascosto (nessuna scrollbar, nessun bordo tagliato in vista)
+              non ha alcun indizio visivo, quindi resta semplicemente
+              scoperto. Le colonne secondarie spariscono sotto sm: invece —
+              Squadra e Azioni restano sempre visibili senza dover scorrere. */}
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-4 py-3">Squadra</th>
-                <th className="px-2 py-3">Allenatore</th>
-                <th className="px-2 py-3 text-center">Posizione</th>
-                <th className="px-2 py-3 text-center">Punti</th>
+                <th className="hidden px-2 py-3 sm:table-cell">Allenatore</th>
+                <th className="hidden px-2 py-3 text-center sm:table-cell">Posizione</th>
+                <th className="hidden px-2 py-3 text-center sm:table-cell">Punti</th>
                 <th className="px-4 py-3 text-right">Azioni</th>
               </tr>
             </thead>
@@ -126,9 +126,9 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
                       {squadra.nome}
                     </div>
                   </td>
-                  <td className="px-2 py-3 text-muted-foreground">{squadra.allenatore}</td>
-                  <td className="px-2 py-3 text-center tabular-nums">{riga?.posizione ?? "—"}</td>
-                  <td className="px-2 py-3 text-center tabular-nums">{riga?.punti ?? "—"}</td>
+                  <td className="hidden px-2 py-3 text-muted-foreground sm:table-cell">{squadra.allenatore}</td>
+                  <td className="hidden px-2 py-3 text-center tabular-nums sm:table-cell">{riga?.posizione ?? "—"}</td>
+                  <td className="hidden px-2 py-3 text-center tabular-nums sm:table-cell">{riga?.punti ?? "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1.5">
                       <Button variant="ghost" size="icon" onClick={() => apriModifica(squadra)} aria-label="Modifica">

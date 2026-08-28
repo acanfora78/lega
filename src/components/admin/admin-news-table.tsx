@@ -89,13 +89,16 @@ export function AdminNewsTable({ articoli }: { articoli: Articolo[] }) {
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessun articolo pubblicato.</div>
       ) : (
         <div className="overflow-hidden rounded-2xl glass">
+          {/* Colonne secondarie nascoste sotto sm invece di affidarsi allo
+              scroll orizzontale: su mobile uno scroll senza alcun indizio
+              visivo resta scoperto. Titolo e Azioni restano sempre visibili. */}
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-4 py-3">Titolo</th>
-                <th className="px-2 py-3">Categoria</th>
-                <th className="px-2 py-3">Data</th>
+                <th className="hidden px-2 py-3 sm:table-cell">Categoria</th>
+                <th className="hidden px-2 py-3 sm:table-cell">Data</th>
                 <th className="px-4 py-3 text-right">Azioni</th>
               </tr>
             </thead>
@@ -103,12 +106,12 @@ export function AdminNewsTable({ articoli }: { articoli: Articolo[] }) {
               {articoliVisibili.map((a) => (
                 <tr key={a.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
                   <td className="px-4 py-3 font-semibold">{a.titolo}</td>
-                  <td className="px-2 py-3">
+                  <td className="hidden px-2 py-3 sm:table-cell">
                     <Badge variant="outline" className="capitalize">
                       {a.categoria}
                     </Badge>
                   </td>
-                  <td className="px-2 py-3 text-muted-foreground">{formatDateIt(a.pubblicatoIl)}</td>
+                  <td className="hidden px-2 py-3 text-muted-foreground sm:table-cell">{formatDateIt(a.pubblicatoIl)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1.5">
                       <Button variant="ghost" size="icon" onClick={() => modifica(a)} aria-label="Modifica">

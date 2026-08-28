@@ -153,18 +153,19 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessun giocatore in rosa.</div>
       ) : (
         <div className="overflow-hidden rounded-2xl glass">
-          {/* overflow-x-auto qui e non solo fuori: senza, sotto i 640px di
-              larghezza (qualsiasi telefono) la colonna Azioni viene tagliata
-              via invece di restare raggiungibile scorrendo. */}
+          {/* Colonne secondarie nascoste sotto sm invece di affidarsi allo
+              scroll orizzontale: su mobile uno scroll senza alcun indizio
+              visivo (niente scrollbar, niente bordo tagliato in vista)
+              resta scoperto. Giocatore e Azioni restano sempre visibili. */}
           <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-4 py-3">Giocatore</th>
-                <th className="px-2 py-3">Squadra</th>
-                <th className="px-2 py-3 text-center">Ruolo</th>
-                <th className="px-2 py-3 text-center">Gol</th>
-                <th className="px-2 py-3 text-center">Assist</th>
+                <th className="hidden px-2 py-3 sm:table-cell">Squadra</th>
+                <th className="hidden px-2 py-3 text-center sm:table-cell">Ruolo</th>
+                <th className="hidden px-2 py-3 text-center sm:table-cell">Gol</th>
+                <th className="hidden px-2 py-3 text-center sm:table-cell">Assist</th>
                 <th className="px-4 py-3 text-right">Azioni</th>
               </tr>
             </thead>
@@ -180,10 +181,10 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
                         {g.nome} {g.cognome}
                       </div>
                     </td>
-                    <td className="px-2 py-3 text-muted-foreground">{squadra?.nomeBreve}</td>
-                    <td className="px-2 py-3 text-center">{g.ruolo}</td>
-                    <td className="px-2 py-3 text-center tabular-nums">{stat?.goal ?? 0}</td>
-                    <td className="px-2 py-3 text-center tabular-nums">{stat?.assist ?? 0}</td>
+                    <td className="hidden px-2 py-3 text-muted-foreground sm:table-cell">{squadra?.nomeBreve}</td>
+                    <td className="hidden px-2 py-3 text-center sm:table-cell">{g.ruolo}</td>
+                    <td className="hidden px-2 py-3 text-center tabular-nums sm:table-cell">{stat?.goal ?? 0}</td>
+                    <td className="hidden px-2 py-3 text-center tabular-nums sm:table-cell">{stat?.assist ?? 0}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1.5">
                         <Button variant="ghost" size="icon" onClick={() => apriModifica(g)} aria-label="Modifica">
