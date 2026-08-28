@@ -72,7 +72,7 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export const viewport: Viewport = {
-  themeColor: "#060907",
+  themeColor: "#05101f",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

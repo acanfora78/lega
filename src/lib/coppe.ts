@@ -36,14 +36,14 @@ export const FASCE: Record<ZonaCoppa, FasciaCoppa> = {
     zona: "europa",
     etichetta: "Europa League",
     etichettaBreve: "UEL",
-    colore: "#5b9dff",
+    colore: "var(--blue-glow)",
     descrizione: "Qualificazione all'Europa League della Lega",
   },
   conference: {
     zona: "conference",
     etichetta: "Conference League",
     etichettaBreve: "UECL",
-    colore: "#38d4c4",
+    colore: "var(--blue)",
     descrizione: "Qualificazione alla Conference League della Lega",
   },
   coppa_italia: {

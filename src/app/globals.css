@@ -3,41 +3,57 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * PALETTE — campionata direttamente dallo stemma della Lega
+ * (public/icons/logo-master.jpg). Le quattro famiglie dello stemma sono
+ * blu (navy del fondo + ciano del bordo luminoso), verde (lime del campo),
+ * giallo (la scritta OVER 40) e bianco.
+ *
+ * I nomi dei token restano quelli storici — `gold*` porta ora il giallo del
+ * logo invece dello champagne — così l'intera interfaccia cambia palette da
+ * qui, senza toccare i componenti che li usano.
+ */
 :root {
   --radius: 1.15rem;
 
-  /* Base surfaces — true onyx, warm undertone, deeper than pure black */
-  --background: #08090a;
-  --background-elevated: #0d100e;
-  --surface: #111512;
-  --surface-2: #171d19;
-  --foreground: #f6f5f0;
-  --muted-foreground: #9a9d95;
+  /* Base — navy dello stemma, non più onyx neutro */
+  --background: #05101f;
+  --background-elevated: #08192c;
+  --surface: #0b2137;
+  --surface-2: #102a43;
+  --foreground: #f2f2f1;
+  --muted-foreground: #93a6bd;
 
-  /* Signature green — jewel emerald, richer than a flat brand green */
-  --primary: #0f9c52;
-  --primary-foreground: #03150c;
-  --primary-glow: #34e88a;
-  --emerald-deep: #063a24;
-  --pitch-900: #04140d;
-  --pitch-800: #072a1a;
-  --pitch-700: #0d4028;
+  /* Verde — lime del campo e del bordo */
+  --primary: #4fb62a;
+  --primary-foreground: #04170a;
+  --primary-glow: #a2df2c;
+  --emerald-deep: #0a3a1c;
+  --pitch-900: #04121e;
+  --pitch-800: #0a3320;
+  --pitch-700: #14602f;
 
-  /* Champagne gold — polished metal, three-stop foil */
-  --gold-dim: #a3812f;
-  --gold: #d9b661;
-  --gold-bright: #f6dd9a;
-  --gold-foreground: #1c1404;
+  /* Blu — navy profondo e ciano acceso del bordo */
+  --blue-deep: #0a2a52;
+  --blue: #1580d8;
+  --blue-glow: #2ac9ff;
+  --blue-foreground: #02101f;
 
-  --border: rgba(246, 245, 240, 0.08);
-  --border-strong: rgba(246, 245, 240, 0.15);
+  /* Giallo — la scritta OVER 40 */
+  --gold-dim: #b8892a;
+  --gold: #f0b93a;
+  --gold-bright: #ffd24a;
+  --gold-foreground: #241a02;
+
+  --border: rgba(242, 242, 241, 0.09);
+  --border-strong: rgba(242, 242, 241, 0.17);
   --ring: var(--primary-glow);
 
   --danger: #ef4444;
   --warning: #f5a524;
   --live: #ff4d5e;
 
-  --card: rgba(23, 29, 25, 0.55);
+  --card: rgba(16, 42, 67, 0.55);
   --card-foreground: var(--foreground);
 
   --noise-opacity: 0.035;
@@ -47,42 +63,74 @@
   color-scheme: dark;
 }
 
+/* Tema chiaro: il bianco dello stemma diventa la superficie, blu/verde/giallo
+   restano gli accenti. I verdi e i gialli scendono di luminosità perché su
+   fondo bianco il lime e il giallo acceso non reggerebbero il contrasto. */
 .light {
   color-scheme: light;
 
-  --background: #f4f3ee;
+  --background: #f3f6fa;
   --background-elevated: #ffffff;
   --surface: #ffffff;
-  --surface-2: #ece9e0;
-  --foreground: #0e120f;
-  --muted-foreground: #5c6058;
+  --surface-2: #e6edf6;
+  --foreground: #08192c;
+  --muted-foreground: #55677e;
 
+  --primary: #3d8f1f;
   --primary-foreground: #ffffff;
-  --pitch-900: #e8f0ea;
-  --pitch-800: #d9e8dd;
-  --pitch-700: #c3ddca;
+  --primary-glow: #2f7a17;
+  --pitch-900: #e9f3ea;
+  --pitch-800: #d7ebda;
+  --pitch-700: #bfe0c6;
 
-  --gold-foreground: #2a2003;
+  --blue: #1268b4;
+  --blue-glow: #0f7fbe;
+  --blue-foreground: #ffffff;
 
-  --border: rgba(14, 18, 15, 0.09);
-  --border-strong: rgba(14, 18, 15, 0.16);
+  /* Sul chiaro `gold-bright` è l'oro più *leggibile*, non il più luminoso:
+     serve come testo su fondi pallidi, quindi è il più scuro dei tre. */
+  --gold-dim: #8a6410;
+  --gold: #b9860f;
+  --gold-bright: #74540d;
+  --gold-foreground: #ffffff;
 
-  --card: rgba(255, 255, 255, 0.72);
+  --border: rgba(8, 25, 44, 0.1);
+  --border-strong: rgba(8, 25, 44, 0.18);
+
+  --card: rgba(255, 255, 255, 0.78);
   --card-foreground: var(--foreground);
 
   --noise-opacity: 0.02;
 }
 
-/* Stessa mesh di colori del brand, riequilibrata per il fondo chiaro. */
+/* Stessa mesh a quattro colori, molto più diluita: sul bianco bastano velature
+   per far leggere blu, verde e giallo senza sporcare il testo. */
 .light body {
   background:
-    radial-gradient(ellipse 90% 55% at 50% -8%, color-mix(in oklab, var(--pitch-700) 70%, transparent) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 45% at 100% 8%, color-mix(in oklab, var(--gold) 22%, transparent) 0%, transparent 58%),
-    radial-gradient(ellipse 55% 45% at 0% 32%, color-mix(in oklab, var(--primary) 12%, transparent) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 50% at 85% 72%, color-mix(in oklab, var(--pitch-800) 70%, transparent) 0%, transparent 60%),
-    radial-gradient(ellipse 65% 45% at 12% 100%, color-mix(in oklab, var(--gold-dim) 14%, transparent) 0%, transparent 58%),
+    radial-gradient(ellipse 85% 50% at 50% -8%, color-mix(in oklab, var(--blue) 14%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 45% at 100% 6%, color-mix(in oklab, var(--blue-glow) 10%, transparent) 0%, transparent 58%),
+    radial-gradient(ellipse 58% 45% at 2% 28%, color-mix(in oklab, var(--primary) 11%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 92% 46%, color-mix(in oklab, var(--gold) 14%, transparent) 0%, transparent 56%),
+    radial-gradient(ellipse 70% 50% at 20% 76%, color-mix(in oklab, var(--pitch-700) 45%, transparent) 0%, transparent 60%),
     var(--background);
   background-attachment: fixed;
+}
+
+/* Gli hero applicano all'aurora `mix-blend-screen`, che sul fondo scuro accende
+   i colori. Sul chiaro fa l'opposto: schiarisce verso il bianco e cancella
+   proprio verde, blu e giallo. Qui si moltiplica, così la mesh del brand si
+   legge anche in tema chiaro. */
+.light .bg-aurora {
+  mix-blend-mode: multiply;
+  opacity: 0.12;
+}
+
+/* Sul chiaro il velo blu del gradiente campo va tenuto molto basso: al 30%
+   come nel tema scuro scurirebbe il pannello fino a mangiarsi il testo. */
+.light .bg-pitch-gradient {
+  background:
+    radial-gradient(ellipse 120% 90% at 78% 10%, color-mix(in oklab, var(--blue) 9%, transparent) 0%, transparent 55%),
+    radial-gradient(ellipse 140% 100% at 30% -20%, var(--pitch-800) 0%, var(--pitch-900) 55%, var(--background) 88%);
 }
 
 .light .glass,
@@ -106,6 +154,11 @@
   --color-pitch-900: var(--pitch-900);
   --color-pitch-800: var(--pitch-800);
   --color-pitch-700: var(--pitch-700);
+
+  --color-blue-deep: var(--blue-deep);
+  --color-blue: var(--blue);
+  --color-blue-glow: var(--blue-glow);
+  --color-blue-foreground: var(--blue-foreground);
 
   --color-gold-dim: var(--gold-dim);
   --color-gold: var(--gold);
@@ -188,11 +241,12 @@ html {
 body {
   position: relative;
   background:
-    radial-gradient(ellipse 90% 55% at 50% -8%, color-mix(in oklab, var(--pitch-700) 85%, transparent) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 45% at 100% 8%, color-mix(in oklab, var(--gold) 12%, transparent) 0%, transparent 60%),
-    radial-gradient(ellipse 55% 45% at 0% 32%, color-mix(in oklab, var(--primary) 14%, transparent) 0%, transparent 62%),
-    radial-gradient(ellipse 70% 50% at 85% 72%, color-mix(in oklab, var(--emerald-deep) 60%, transparent) 0%, transparent 62%),
-    radial-gradient(ellipse 65% 45% at 12% 100%, color-mix(in oklab, var(--gold-dim) 10%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 85% 50% at 50% -8%, color-mix(in oklab, var(--blue) 22%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 45% at 100% 6%, color-mix(in oklab, var(--blue-glow) 13%, transparent) 0%, transparent 58%),
+    radial-gradient(ellipse 58% 45% at 2% 28%, color-mix(in oklab, var(--primary) 17%, transparent) 0%, transparent 62%),
+    radial-gradient(ellipse 55% 40% at 92% 46%, color-mix(in oklab, var(--gold) 11%, transparent) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 50% at 20% 76%, color-mix(in oklab, var(--pitch-700) 55%, transparent) 0%, transparent 62%),
+    radial-gradient(ellipse 60% 45% at 80% 100%, color-mix(in oklab, var(--blue-deep) 70%, transparent) 0%, transparent 60%),
     var(--background);
   background-attachment: fixed;
   color: var(--foreground);
@@ -259,8 +313,11 @@ body::before {
     color: transparent;
   }
 
+  /* Fondo degli hero: il verde del campo che sfuma nel navy dello stemma. */
   .bg-pitch-gradient {
-    background: radial-gradient(ellipse 140% 100% at 50% -20%, var(--pitch-700) 0%, var(--pitch-900) 45%, var(--background) 85%);
+    background:
+      radial-gradient(ellipse 120% 90% at 78% 10%, color-mix(in oklab, var(--blue) 30%, transparent) 0%, transparent 55%),
+      radial-gradient(ellipse 140% 100% at 30% -20%, var(--pitch-700) 0%, var(--pitch-900) 45%, var(--background) 85%);
   }
 
   .bg-shimmer {
@@ -272,8 +329,9 @@ body::before {
   .bg-aurora {
     background-image:
       radial-gradient(ellipse 55% 60% at 15% 20%, color-mix(in oklab, var(--primary) 38%, transparent) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 55% at 85% 15%, color-mix(in oklab, var(--gold) 30%, transparent) 0%, transparent 60%),
-      radial-gradient(ellipse 65% 60% at 50% 100%, color-mix(in oklab, var(--emerald-deep) 55%, transparent) 0%, transparent 65%);
+      radial-gradient(ellipse 50% 55% at 85% 15%, color-mix(in oklab, var(--blue-glow) 32%, transparent) 0%, transparent 60%),
+      radial-gradient(ellipse 45% 50% at 60% 8%, color-mix(in oklab, var(--gold) 26%, transparent) 0%, transparent 58%),
+      radial-gradient(ellipse 65% 60% at 50% 100%, color-mix(in oklab, var(--blue-deep) 60%, transparent) 0%, transparent 65%);
     background-size: 200% 200%, 200% 200%, 200% 200%;
     animation: var(--animate-aurora);
   }

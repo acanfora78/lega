@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
@@ -49,6 +49,19 @@ function LogoSlot({
   primario?: boolean;
 }) {
   const [mancante, setMancante] = useState(false);
+  const ref = useRef<HTMLImageElement>(null);
+
+  // L'immagine viene servita già nell'HTML, quindi un 404 fa scattare `error`
+  // mentre il browser analizza la pagina — prima che React idrati e possa
+  // attaccare onError. Al montaggio va quindi controllato anche lo stato di un
+  // caricamento già concluso, altrimenti resta a video l'icona di file rotto.
+  const verifica = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete && img.naturalWidth === 0) setMancante(true);
+  }, []);
+
+  useEffect(() => {
+    verifica(ref.current);
+  }, [verifica]);
 
   if (mancante) {
     return (
@@ -65,12 +78,14 @@ function LogoSlot({
   return (
     // eslint-disable-next-line @next/next/no-img-element -- loghi statici serviti da /public, next/image non aggiunge nulla qui
     <img
+      ref={ref}
       src={src}
       alt={alt}
       width={size}
       height={size}
       style={{ width: size, height: size }}
       onError={() => setMancante(true)}
+      onLoad={(e) => verifica(e.currentTarget)}
       className={cn("shrink-0 rounded-2xl object-contain", primario && "drop-shadow-[0_0_24px_rgba(52,232,138,0.18)]")}
     />
   );
