@@ -153,6 +153,10 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessun giocatore in rosa.</div>
       ) : (
         <div className="overflow-hidden rounded-2xl glass">
+          {/* overflow-x-auto qui e non solo fuori: senza, sotto i 640px di
+              larghezza (qualsiasi telefono) la colonna Azioni viene tagliata
+              via invece di restare raggiungibile scorrendo. */}
+          <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -195,6 +199,7 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

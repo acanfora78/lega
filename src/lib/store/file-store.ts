@@ -645,6 +645,35 @@ export async function importaCalendarioCompetizione(
   return nuove;
 }
 
+/**
+ * Stesso import in blocco, ma per il calendario del campionato principale
+ * (nessun competizioneId/faseId: sono le partite "storiche", quelle che
+ * alimentano `classifica` invece di `classificheCompetizioni`).
+ */
+export async function importaCalendarioPartite(righe: RigaCalendarioImport[]) {
+  const data = await load();
+
+  const nuove: Partita[] = righe.map((r, i) => ({
+    id: `partita-${Date.now()}-${i}`,
+    stagioneId: data.stagioneAttualeId,
+    giornata: r.giornata,
+    dataOra: r.dataOra,
+    stato: "programmata",
+    squadraCasaId: r.squadraCasaId,
+    squadraTrasfertaId: r.squadraTrasfertaId,
+    golCasa: 0,
+    golTrasferta: 0,
+    arbitro: r.arbitro ?? "",
+    campo: r.campo ?? "Campo Sportivo Santa Teresa",
+    eventi: [],
+    galleryUrls: [],
+  }));
+
+  data.partite.push(...nuove);
+  await persist(data);
+  return nuove;
+}
+
 // ---------------------------------------------------------------------------
 // NEWS
 // ---------------------------------------------------------------------------

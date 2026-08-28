@@ -5,10 +5,19 @@ function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+/**
+ * Solo le partite del campionato principale (nessun competizioneId): questa
+ * funzione alimenta home, /partite, le pagine squadra e l'admin partite, che
+ * sono sempre stati "il campionato" per definizione. Le partite di una
+ * competizione aggiuntiva hanno le proprie pagine dedicate
+ * (getPartiteCompetizione in src/lib/data/competizioni.ts) e non devono
+ * comparire mischiate qui.
+ */
 export async function getPartite(): Promise<Partita[]> {
-  return (await legaData()).partite;
+  return (await legaData()).partite.filter((p) => !p.competizioneId);
 }
 
+/** Cerca per id su TUTTE le partite, competizioni incluse: è la funzione dietro alla pagina di dettaglio/gestione di una singola partita, che deve funzionare identica per qualunque partita. */
 export async function getPartitaById(id: string): Promise<Partita | undefined> {
   return (await legaData()).partite.find((p) => p.id === id);
 }

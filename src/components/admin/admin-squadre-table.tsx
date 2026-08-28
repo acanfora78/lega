@@ -101,6 +101,12 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessuna squadra ancora registrata.</div>
       ) : (
         <div className="overflow-hidden rounded-2xl glass">
+          {/* overflow-x-auto qui, non solo sul contenitore esterno: senza
+              questo la tabella (min-w 640px) sborda sotto i 640px di
+              larghezza e la colonna Azioni — con Modifica/Elimina — finisce
+              tagliata via, invisibile e irraggiungibile, invece che
+              raggiungibile scorrendo. Su schermo da telefono succede sempre. */}
+          <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -137,6 +143,7 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

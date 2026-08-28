@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminPartiteTable } from "@/components/admin/admin-partite-table";
+import { CalendarioCsvUpload } from "@/components/admin/calendario-csv-upload";
 import { getPartite, getSquadre } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Partite & Risultati" };
@@ -16,7 +17,10 @@ export default async function AdminPartitePage() {
         <p className="mt-1 text-sm text-muted-foreground">Gestisci calendario, formazioni, gol, cartellini e MVP di ogni sfida.</p>
       </div>
       <AdminShell>
-        <AdminPartiteTable partite={partite} squadre={squadre} />
+        <div className="flex flex-col gap-6">
+          <CalendarioCsvUpload endpoint="/api/admin/partite/calendario" nomeFileModello="calendario-campionato.csv" />
+          <AdminPartiteTable partite={partite} squadre={squadre} />
+        </div>
       </AdminShell>
     </Container>
   );
