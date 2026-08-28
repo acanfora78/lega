@@ -73,3 +73,8 @@ export function revalidateSqualifiche() {
 export function revalidateImpostazioni() {
   revalidateMany(["/", "/classifica", "/statistiche", "/partite", "/squadre", "/disciplinare"]);
 }
+
+export function revalidateCompetizioni(slug?: string) {
+  revalidateMany(["/", "/competizioni"]);
+  if (slug) revalidatePath(`/competizioni/${slug}`);
+}

@@ -7,4 +7,5 @@ export * from "./media";
 export * from "./sponsors";
 export * from "./awards";
 export * from "./pagelle";
+export * from "./competizioni";
 export * from "./search";

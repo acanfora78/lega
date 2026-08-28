@@ -7,12 +7,14 @@ import {
   Users,
   UserCog,
   CalendarDays,
+  Trophy,
   Newspaper,
   Images,
   Handshake,
   Bell,
   Settings,
   ShieldCheck,
+  Gavel,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +23,8 @@ const VOCI = [
   { href: "/admin/squadre", label: "Squadre", icon: Users },
   { href: "/admin/giocatori", label: "Giocatori", icon: UserCog },
   { href: "/admin/partite", label: "Partite & Risultati", icon: CalendarDays },
+  { href: "/admin/competizioni", label: "Competizioni", icon: Trophy },
+  { href: "/admin/disciplinare", label: "Giudice Sportivo", icon: Gavel },
   { href: "/admin/news", label: "News", icon: Newspaper },
   { href: "/admin/media", label: "Galleria", icon: Images },
   { href: "/admin/sponsor", label: "Sponsor", icon: Handshake },

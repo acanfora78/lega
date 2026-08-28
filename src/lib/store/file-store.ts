@@ -6,7 +6,9 @@ import { createReadOnlyClient } from "@/lib/supabase/read-only";
 import type {
   AlbumMedia,
   Articolo,
+  Competizione,
   EventoPartita,
+  FaseCompetizione,
   Giocatore,
   Notifica,
   Partita,
@@ -69,7 +71,20 @@ export interface LegaData {
   squadre: Squadra[];
   giocatori: Giocatore[];
   partite: Partita[];
+  /** Classifica del campionato principale (comportamento storico, invariato). */
   classifica: RigaClassifica[];
+  /**
+   * Competizioni aggiuntive create dall'organizzatore (Coppa Italia, tornei a
+   * eliminazione diretta, gironi...), parallele al campionato principale.
+   */
+  competizioni: Competizione[];
+  /**
+   * Classifiche delle competizioni aggiuntive, con chiave `competizioneId` o
+   * `competizioneId:faseId` per le fasi a girone di una competizione multi-fase.
+   * Separata da `classifica` apposta: non deve interferire in alcun modo con
+   * il campionato principale, che resta l'unica fonte per home/classifica/statistiche.
+   */
+  classificheCompetizioni: Record<string, RigaClassifica[]>;
   articoli: Articolo[];
   albumMedia: AlbumMedia[];
   sponsor: Sponsor[];
@@ -107,6 +122,8 @@ function statoIniziale(): LegaData {
     giocatori: [],
     partite: [],
     classifica: [],
+    competizioni: [],
+    classificheCompetizioni: {},
     articoli: [],
     albumMedia: [],
     sponsor: [],
@@ -241,10 +258,17 @@ export const getStore = cache(async function getStore(): Promise<LegaData> {
 // ---------------------------------------------------------------------------
 // CLASSIFICA — ricalcolata automaticamente ad ogni scrittura di risultato
 // ---------------------------------------------------------------------------
-export async function ricalcolaClassifica() {
-  const data = await load();
-  data.classifica = data.squadre.map((s) => {
-    const concluse = data.partite.filter(
+
+/**
+ * Calcola la classifica di un insieme di squadre sulle sole partite concluse
+ * passate in `partite`. Condivisa tra il campionato principale (tutte le
+ * partite senza competizioneId, per compatibilità con i dati esistenti) e le
+ * classifiche scoped delle competizioni aggiuntive: la logica di calcolo è
+ * identica, cambia solo quale sottoinsieme di partite considerare.
+ */
+function calcolaClassifica(squadre: Squadra[], partite: Partita[]): RigaClassifica[] {
+  const classifica = squadre.map((s) => {
+    const concluse = partite.filter(
       (p) => p.stato === "conclusa" && (p.squadraCasaId === s.id || p.squadraTrasfertaId === s.id)
     );
     let vinte = 0,
@@ -305,9 +329,48 @@ export async function ricalcolaClassifica() {
     } satisfies RigaClassifica;
   });
 
-  data.classifica.sort((a, b) => b.punti - a.punti || b.golFatti - b.golSubiti - (a.golFatti - a.golSubiti) || b.golFatti - a.golFatti);
-  data.classifica.forEach((r, i) => (r.posizione = i + 1));
+  classifica.sort((a, b) => b.punti - a.punti || b.golFatti - b.golSubiti - (a.golFatti - a.golSubiti) || b.golFatti - a.golFatti);
+  classifica.forEach((r, i) => (r.posizione = i + 1));
+  return classifica;
+}
+
+export async function ricalcolaClassifica() {
+  const data = await load();
+  // Solo le partite del campionato principale: le partite di una competizione
+  // aggiuntiva (competizioneId valorizzato) hanno la propria classifica
+  // separata e non devono in alcun modo influenzare questa.
+  const partitePrincipali = data.partite.filter((p) => !p.competizioneId);
+  data.classifica = calcolaClassifica(data.squadre, partitePrincipali);
   await persist(data);
+}
+
+/**
+ * Ricalcola la classifica di una competizione aggiuntiva (o di una sua fase a
+ * girone). Non tocca mai `data.classifica`, che resta il campionato
+ * principale: vive in `classificheCompetizioni`, con chiave `competizioneId`
+ * o `competizioneId:faseId` per le fasi di una competizione multi-fase.
+ */
+export async function ricalcolaClassificaCompetizione(competizioneId: string, faseId?: string) {
+  const data = await load();
+  const competizione = data.competizioni.find((c) => c.id === competizioneId);
+  if (!competizione) return;
+
+  const fase = faseId ? competizione.fasi.find((f) => f.id === faseId) : undefined;
+  const squadreIds = fase ? fase.squadreIds : competizione.squadreIscritteIds;
+  const squadre = data.squadre.filter((s) => squadreIds.includes(s.id));
+  const partite = data.partite.filter(
+    (p) => p.competizioneId === competizioneId && (faseId ? p.faseId === faseId : !p.faseId)
+  );
+
+  const chiave = faseId ? `${competizioneId}:${faseId}` : competizioneId;
+  data.classificheCompetizioni[chiave] = calcolaClassifica(squadre, partite);
+  await persist(data);
+}
+
+/** Ricalcola la classifica giusta per la partita indicata: quella del campionato principale, o quella scoped della sua competizione/fase. */
+async function ricalcolaClassificaPerPartita(partita: Partita) {
+  if (partita.competizioneId) await ricalcolaClassificaCompetizione(partita.competizioneId, partita.faseId);
+  else await ricalcolaClassifica();
 }
 
 // ---------------------------------------------------------------------------
@@ -335,8 +398,19 @@ export async function eliminaSquadra(id: string) {
   data.squadre = data.squadre.filter((s) => s.id !== id);
   data.giocatori = data.giocatori.filter((g) => g.squadraId !== id);
   data.partite = data.partite.filter((p) => p.squadraCasaId !== id && p.squadraTrasfertaId !== id);
+  // Toglie la squadra anche dalle competizioni aggiuntive a cui era iscritta,
+  // altrimenti resterebbe in classifica pur non avendo più partite né rosa.
+  const competizioniColpite = data.competizioni.filter((c) => c.squadreIscritteIds.includes(id));
+  data.competizioni.forEach((c) => {
+    c.squadreIscritteIds = c.squadreIscritteIds.filter((sid) => sid !== id);
+    c.fasi.forEach((f) => (f.squadreIds = f.squadreIds.filter((sid) => sid !== id)));
+  });
   await persist(data);
   await ricalcolaClassifica();
+  for (const c of competizioniColpite) {
+    await ricalcolaClassificaCompetizione(c.id);
+    for (const f of c.fasi) await ricalcolaClassificaCompetizione(c.id, f.id);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -376,9 +450,10 @@ export async function creaPartita(partita: Partita) {
 
 export async function eliminaPartita(id: string) {
   const data = await load();
+  const partita = data.partite.find((p) => p.id === id);
   data.partite = data.partite.filter((p) => p.id !== id);
   await persist(data);
-  await ricalcolaClassifica();
+  if (partita) await ricalcolaClassificaPerPartita(partita);
 }
 
 export async function aggiornaStatoPartita(id: string, stato: StatoPartita) {
@@ -387,7 +462,7 @@ export async function aggiornaStatoPartita(id: string, stato: StatoPartita) {
   if (!partita) return undefined;
   partita.stato = stato;
   await persist(data);
-  if (stato === "conclusa") await ricalcolaClassifica();
+  if (stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
   return partita;
 }
 
@@ -398,7 +473,7 @@ export async function aggiornaRisultatoPartita(id: string, golCasa: number, golT
   partita.golCasa = golCasa;
   partita.golTrasferta = golTrasferta;
   await persist(data);
-  if (partita.stato === "conclusa") await ricalcolaClassifica();
+  if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
   return partita;
 }
 
@@ -445,7 +520,7 @@ export async function aggiungiEventoPartita(id: string, evento: EventoPartita) {
     else if (evento.squadraId === partita.squadraTrasfertaId) partita.golTrasferta += 1;
   }
   await persist(data);
-  if (partita.stato === "conclusa") await ricalcolaClassifica();
+  if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
   return partita;
 }
 
@@ -469,8 +544,105 @@ export async function eliminaEventoPartita(id: string, eventoId: string) {
     else if (evento.squadraId === partita.squadraTrasfertaId) partita.golTrasferta = Math.max(0, partita.golTrasferta - 1);
   }
   await persist(data);
-  if (partita.stato === "conclusa") await ricalcolaClassifica();
+  if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
   return partita;
+}
+
+// ---------------------------------------------------------------------------
+// COMPETIZIONI — tornei aggiuntivi paralleli al campionato principale
+// ---------------------------------------------------------------------------
+export async function creaCompetizione(competizione: Competizione) {
+  const data = await load();
+  data.competizioni.push(competizione);
+  await persist(data);
+  return competizione;
+}
+
+export async function aggiornaCompetizione(id: string, patch: Partial<Competizione>) {
+  const data = await load();
+  const idx = data.competizioni.findIndex((c) => c.id === id);
+  if (idx === -1) return undefined;
+  data.competizioni[idx] = { ...data.competizioni[idx], ...patch };
+  await persist(data);
+  return data.competizioni[idx];
+}
+
+export async function eliminaCompetizione(id: string) {
+  const data = await load();
+  data.competizioni = data.competizioni.filter((c) => c.id !== id);
+  data.partite = data.partite.filter((p) => p.competizioneId !== id);
+  Object.keys(data.classificheCompetizioni)
+    .filter((chiave) => chiave === id || chiave.startsWith(`${id}:`))
+    .forEach((chiave) => delete data.classificheCompetizioni[chiave]);
+  await persist(data);
+}
+
+/** Aggiunge una fase (girone, semifinale...) a una competizione multi-fase. */
+export async function creaFaseCompetizione(competizioneId: string, fase: FaseCompetizione) {
+  const data = await load();
+  const competizione = data.competizioni.find((c) => c.id === competizioneId);
+  if (!competizione) return undefined;
+  competizione.fasi.push(fase);
+  await persist(data);
+  return competizione;
+}
+
+export async function eliminaFaseCompetizione(competizioneId: string, faseId: string) {
+  const data = await load();
+  const competizione = data.competizioni.find((c) => c.id === competizioneId);
+  if (!competizione) return undefined;
+  competizione.fasi = competizione.fasi.filter((f) => f.id !== faseId);
+  data.partite = data.partite.filter((p) => !(p.competizioneId === competizioneId && p.faseId === faseId));
+  delete data.classificheCompetizioni[`${competizioneId}:${faseId}`];
+  await persist(data);
+  return competizione;
+}
+
+/**
+ * Importa in blocco il calendario di una competizione (o di una sua fase) da
+ * righe già validate e risolte sulle squadre — l'organizzatore fornisce il
+ * calendario via CSV invece che generarlo l'app, quindi qui si tratta solo di
+ * scrivere le partite, non di produrre un girone o un tabellone.
+ */
+export interface RigaCalendarioImport {
+  giornata: number;
+  dataOra: string;
+  squadraCasaId: string;
+  squadraTrasfertaId: string;
+  arbitro?: string;
+  campo?: string;
+}
+
+export async function importaCalendarioCompetizione(
+  competizioneId: string,
+  faseId: string | undefined,
+  righe: RigaCalendarioImport[]
+) {
+  const data = await load();
+  const competizione = data.competizioni.find((c) => c.id === competizioneId);
+  if (!competizione) return undefined;
+
+  const nuove: Partita[] = righe.map((r, i) => ({
+    id: `partita-${competizioneId}-${Date.now()}-${i}`,
+    stagioneId: data.stagioneAttualeId,
+    competizioneId,
+    faseId,
+    giornata: r.giornata,
+    dataOra: r.dataOra,
+    stato: "programmata",
+    squadraCasaId: r.squadraCasaId,
+    squadraTrasfertaId: r.squadraTrasfertaId,
+    golCasa: 0,
+    golTrasferta: 0,
+    arbitro: r.arbitro ?? "",
+    campo: r.campo ?? "Campo Sportivo Santa Teresa",
+    eventi: [],
+    galleryUrls: [],
+  }));
+
+  data.partite.push(...nuove);
+  await persist(data);
+  return nuove;
 }
 
 // ---------------------------------------------------------------------------

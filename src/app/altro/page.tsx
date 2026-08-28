@@ -15,6 +15,7 @@ import {
   Newspaper,
   Search,
   ShieldCheck,
+  Swords,
   User,
   ChevronRight,
   Info,
@@ -24,6 +25,7 @@ export const metadata: Metadata = { title: "Altro" };
 
 const VOCI = [
   { href: "/statistiche", label: "Centro Statistiche", desc: "Marcatori, assist, record e leaderboard", icon: BarChart3 },
+  { href: "/competizioni", label: "Competizioni", desc: "Coppe e tornei aggiuntivi paralleli al campionato", icon: Swords },
   { href: "/campionati-passati", label: "Campionati Passati", desc: "Classifiche e marcatori delle stagioni concluse", icon: Archive },
   { href: "/hall-of-fame", label: "Hall of Fame", desc: "Albo d'oro e leggende della Lega", icon: Crown },
   { href: "/media", label: "Media Center", desc: "Foto, video e highlights", icon: Images },

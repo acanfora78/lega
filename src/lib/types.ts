@@ -152,6 +152,15 @@ export interface VotoPartita {
 export interface Partita {
   id: string;
   stagioneId: string;
+  /**
+   * Competizione a cui appartiene la partita. Assente = il campionato
+   * principale della stagione (comportamento storico, invariato): tutte le
+   * partite create prima dell'introduzione delle competizioni aggiuntive
+   * restano valide senza bisogno di alcuna migrazione.
+   */
+  competizioneId?: string;
+  /** Fase della competizione (es. "Girone A", "Semifinale"), se la competizione ne ha più di una. */
+  faseId?: string;
   giornata: number;
   dataOra: string;
   stato: StatoPartita;
