@@ -4,6 +4,7 @@ import { Container } from "@/components/shared/container";
 import { AccessDeniedNotice } from "@/components/shared/access-denied-notice";
 import { SectionHeader } from "@/components/shared/section-header";
 import { Hero } from "@/components/home/hero";
+import { LogoTrio } from "@/components/home/logo-trio";
 import { MatchCard } from "@/components/match/match-card";
 import { StandingsTable } from "@/components/shared/standings-table";
 import { TopList } from "@/components/home/top-list";
@@ -74,6 +75,9 @@ export default async function HomePage() {
       <Suspense fallback={null}>
         <AccessDeniedNotice />
       </Suspense>
+
+      <LogoTrio />
+
       {heroMatch && heroCasa && heroTrasferta ? (
         <Hero
           partita={heroMatch}
@@ -143,7 +147,7 @@ export default async function HomePage() {
           {classifica.length > 0 && (
             <section className="lg:col-span-2">
               <SectionHeader eyebrow="Stagione in corso" title="Classifica" href="/classifica" />
-              <StandingsTable righe={classifica} squadre={squadre} compact />
+              <StandingsTable righe={classifica} squadre={squadre} compact mostraCoppe totaleSquadre={classificaCompleta.length} />
             </section>
           )}
 

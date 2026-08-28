@@ -14,9 +14,15 @@ import type {
   RigaClassifica,
   Sponsor,
   Squadra,
+  Squalifica,
   Stagione,
   StatoPartita,
+  VotoPartita,
 } from "@/lib/types";
+
+/** Scala dei voti usata sia dal pannello admin sia dalla validazione lato server. */
+export const VOTO_MINIMO = 1;
+export const VOTO_MASSIMO = 10;
 
 // ============================================================================
 // STORE REALE (server-side)
@@ -69,6 +75,7 @@ export interface LegaData {
   sponsor: Sponsor[];
   premiSettimanali: PremioSettimanale[];
   notifiche: Notifica[];
+  squalifiche: Squalifica[];
   impostazioni: ImpostazioniLega;
 }
 
@@ -105,6 +112,7 @@ function statoIniziale(): LegaData {
     sponsor: [],
     premiSettimanali: [],
     notifiche: [],
+    squalifiche: [],
     impostazioni: {
       nomeLega: "Lega Calcio Over 40",
       campo: "Campo Sportivo Santa Teresa, Scafati (SA)",
@@ -399,6 +407,30 @@ export async function impostaMvpPartita(id: string, giocatoreId: string) {
   return partita;
 }
 
+/**
+ * Salva i voti dell'organizzatore per una partita. I voti arrivano dal
+ * tabellino e sono la sorgente delle classifiche "Miglior giocatore" e
+ * "Miglior portiere": un voto a 0 (o fuori scala) equivale a "non assegnato"
+ * e viene rimosso, così una casella svuotata nel pannello sparisce davvero
+ * invece di restare a pesare sulle medie.
+ */
+export async function impostaVotiPartita(id: string, voti: VotoPartita[]) {
+  const data = await load();
+  const partita = data.partite.find((p) => p.id === id);
+  if (!partita) return undefined;
+
+  const validi = voti
+    .filter((v) => v.giocatoreId && Number.isFinite(v.voto) && v.voto >= VOTO_MINIMO && v.voto <= VOTO_MASSIMO)
+    .map((v) => ({ giocatoreId: v.giocatoreId, voto: v.voto, ...(v.nota ? { nota: v.nota } : {}) }));
+
+  // Un solo voto per giocatore: l'ultimo inviato vince.
+  const perGiocatore = new Map(validi.map((v) => [v.giocatoreId, v]));
+  partita.voti = [...perGiocatore.values()];
+
+  await persist(data);
+  return partita;
+}
+
 export async function aggiungiEventoPartita(id: string, evento: EventoPartita) {
   const data = await load();
   const partita = data.partite.find((p) => p.id === id);
@@ -435,6 +467,31 @@ export async function aggiornaArticolo(id: string, patch: Partial<Articolo>) {
 export async function eliminaArticolo(id: string) {
   const data = await load();
   data.articoli = data.articoli.filter((a) => a.id !== id);
+  await persist(data);
+}
+
+// ---------------------------------------------------------------------------
+// SQUALIFICHE (Giudice Sportivo)
+// ---------------------------------------------------------------------------
+export async function creaSqualifica(squalifica: Squalifica) {
+  const data = await load();
+  data.squalifiche.unshift(squalifica);
+  await persist(data);
+  return squalifica;
+}
+
+export async function aggiornaSqualifica(id: string, patch: Partial<Squalifica>) {
+  const data = await load();
+  const idx = data.squalifiche.findIndex((s) => s.id === id);
+  if (idx === -1) return undefined;
+  data.squalifiche[idx] = { ...data.squalifiche[idx], ...patch };
+  await persist(data);
+  return data.squalifiche[idx];
+}
+
+export async function eliminaSqualifica(id: string) {
+  const data = await load();
+  data.squalifiche = data.squalifiche.filter((s) => s.id !== id);
   await persist(data);
 }
 

@@ -10,6 +10,9 @@ import {
   getClassificaPresenze,
   getClassificaCleanSheet,
   getMigliorPortiere,
+  getClassificaMigliorGiocatore,
+  getClassificaMigliorPortiere,
+  PRESENZE_MINIME_PER_MEDIA,
   getStagioneAttuale,
   getSquadre,
 } from "@/lib/data";
@@ -17,10 +20,25 @@ import {
 export const metadata: Metadata = { title: "Statistiche" };
 
 export default async function StatistichePage() {
-  const [stagione, marcatori, assist, portieri, cleanSheet, ammoniti, espulsi, presenze, mvp, squadre] = await Promise.all([
+  const [
+    stagione,
+    marcatori,
+    assist,
+    migliorGiocatore,
+    migliorPortiere,
+    menoBattuto,
+    cleanSheet,
+    ammoniti,
+    espulsi,
+    presenze,
+    mvp,
+    squadre,
+  ] = await Promise.all([
     getStagioneAttuale(),
     getClassificaMarcatori(20),
     getClassificaAssist(20),
+    getClassificaMigliorGiocatore(20),
+    getClassificaMigliorPortiere(20),
     getMigliorPortiere(20),
     getClassificaCleanSheet(20),
     getClassificaAmmonizioni(20),
@@ -41,7 +59,10 @@ export default async function StatistichePage() {
       <StatisticheTabs
         marcatori={marcatori.map((x) => ({ giocatore: x.giocatore, value: x.stat!.goal }))}
         assist={assist.map((x) => ({ giocatore: x.giocatore, value: x.stat!.assist }))}
-        portieri={portieri.map((x) => ({ giocatore: x.giocatore, value: x.stat!.golSubiti ?? 0 }))}
+        migliorGiocatore={migliorGiocatore.map((x) => ({ giocatore: x.giocatore, value: x.media.toFixed(2) }))}
+        migliorPortiere={migliorPortiere.map((x) => ({ giocatore: x.giocatore, value: x.media.toFixed(2) }))}
+        menoBattuto={menoBattuto.map((x) => ({ giocatore: x.giocatore, value: x.stat!.golSubiti ?? 0 }))}
+        presenzeMinime={PRESENZE_MINIME_PER_MEDIA}
         cleanSheet={cleanSheet.map((x) => ({ giocatore: x.giocatore, value: x.stat!.cleanSheet ?? 0 }))}
         ammoniti={ammoniti.map((x) => ({ giocatore: x.giocatore, value: x.stat!.ammonizioni }))}
         espulsi={espulsi.map((x) => ({ giocatore: x.giocatore, value: x.stat!.espulsioni }))}

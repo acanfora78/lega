@@ -35,7 +35,7 @@ export function ClassificaTabs({
       </TabsList>
 
       <TabsContent value="generale" className="mt-5">
-        <StandingsTable righe={generale} squadre={squadre} />
+        <StandingsTable righe={generale} squadre={squadre} mostraCoppe />
       </TabsContent>
       <TabsContent value="casa" className="mt-5">
         <StandingsTable righe={casa} squadre={squadre} compact />

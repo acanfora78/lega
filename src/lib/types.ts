@@ -138,6 +138,17 @@ export interface StatistichePartita {
   parate: [number, number];
 }
 
+/**
+ * Voto assegnato dall'organizzatore a fine partita (scala 1–10, passo 0.5).
+ * È la fonte unica delle classifiche "Miglior giocatore" e "Miglior portiere":
+ * entrambe sono medie calcolate su questi voti, non su statistiche derivate.
+ */
+export interface VotoPartita {
+  giocatoreId: string;
+  voto: number;
+  nota?: string;
+}
+
 export interface Partita {
   id: string;
   stagioneId: string;
@@ -157,6 +168,7 @@ export interface Partita {
   formazioneTrasferta?: FormazioneVoce[];
   statistiche?: StatistichePartita;
   mvpGiocatoreId?: string;
+  voti?: VotoPartita[];
   galleryUrls: string[];
   highlightUrl?: string;
   partitaDellaSettimana?: boolean;
@@ -233,6 +245,62 @@ export interface Notifica {
   corpo: string;
   link?: string;
   creataIl: string;
+}
+
+// ---------------------------------------------------------------------------
+// GIUSTIZIA SPORTIVA — squalifiche e conteggio cartellini
+// I conteggi di ammonizioni/espulsioni NON sono immessi a mano: derivano dagli
+// eventi delle partite concluse (vedi src/lib/data/disciplina.ts). Le squalifiche
+// invece sono decise dal Giudice Sportivo e le inserisce l'organizzatore.
+// ---------------------------------------------------------------------------
+
+export type MotivoSqualifica =
+  | "espulsione"
+  | "somma_ammonizioni"
+  | "condotta"
+  | "reclamo"
+  | "altro";
+
+export interface Squalifica {
+  id: string;
+  stagioneId: string;
+  giocatoreId: string;
+  squadraId: string;
+  giornate: number;
+  /** Prima giornata in cui la squalifica va scontata. */
+  giornataDa: number;
+  motivo: MotivoSqualifica;
+  dettaglio?: string;
+  /** Giornata della partita che ha originato il provvedimento, se nota. */
+  giornataOrigine?: number;
+  emessaIl: string;
+  articoloId?: string;
+}
+
+export interface ConteggioDisciplinare {
+  giocatoreId: string;
+  squadraId: string;
+  ammonizioni: number;
+  espulsioni: number;
+  secondiGialli: number;
+  /** Ammonizioni residue prima di scattare alla diffida successiva. */
+  ammonizioniVersoSqualifica: number;
+  diffidato: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// PIAZZAMENTI — zone di qualificazione alle coppe mostrate in classifica
+// ---------------------------------------------------------------------------
+
+export type ZonaCoppa = "champions" | "europa" | "conference" | "coppa_italia" | "esclusa";
+
+export interface FasciaCoppa {
+  zona: ZonaCoppa;
+  etichetta: string;
+  etichettaBreve: string;
+  /** Colore del binario verticale accanto alla posizione in classifica. */
+  colore: string;
+  descrizione: string;
 }
 
 // ---------------------------------------------------------------------------

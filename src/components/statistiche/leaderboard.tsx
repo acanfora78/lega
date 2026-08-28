@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { TeamCrest } from "@/components/brand/team-crest";
+import { UnderQuarantaStar } from "@/components/player/under-quaranta-star";
 import type { Giocatore, Squadra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -45,8 +46,11 @@ export function Leaderboard({
             </span>
             <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} fotoUrl={giocatore.fotoUrl} size={40} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">
-                {giocatore.nome} {giocatore.cognome}
+              <p className="flex items-center gap-1 text-sm font-semibold">
+                <span className="truncate">
+                  {giocatore.nome} {giocatore.cognome}
+                </span>
+                <UnderQuarantaStar eta={giocatore.eta} />
               </p>
               {squadra && (
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">

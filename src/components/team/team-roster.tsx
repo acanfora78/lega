@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
+import { UnderQuarantaStar } from "@/components/player/under-quaranta-star";
 import { Badge } from "@/components/ui/badge";
 import type { Giocatore, Ruolo } from "@/lib/types";
 import { legaData } from "@/lib/mock";
@@ -29,8 +30,11 @@ export async function TeamRoster({ giocatori, capitanoId, viceCapitanoId }: { gi
                     <span className="font-score w-5 shrink-0 text-center text-sm font-bold text-muted-foreground">{g.numeroMaglia}</span>
                     <PlayerAvatar nome={g.nome} cognome={g.cognome} fotoUrl={g.fotoUrl} size={38} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">
-                        {g.nome} {g.cognome}
+                      <p className="flex items-center gap-1 truncate text-sm font-semibold">
+                        <span className="truncate">
+                          {g.nome} {g.cognome}
+                        </span>
+                        <UnderQuarantaStar eta={g.eta} />
                       </p>
                       <div className="flex items-center gap-1.5">
                         {g.id === capitanoId && <Badge variant="gold">C</Badge>}

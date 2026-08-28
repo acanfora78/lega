@@ -41,6 +41,31 @@ export function initials(name: string) {
     .toUpperCase();
 }
 
+/**
+ * In un campionato Over 40 il giocatore che non ha ancora compiuto 40 anni è
+ * un'eccezione al regolamento (fascia 35–39), quindi va segnalato in tutte le
+ * liste con una stellina.
+ */
+export const ETA_MINIMA_REGOLAMENTO = 40;
+
+export function isUnderQuaranta(eta: number | undefined): boolean {
+  return typeof eta === "number" && eta > 0 && eta < ETA_MINIMA_REGOLAMENTO;
+}
+
+/** Età compiuta a partire dalla data di nascita, indipendente dal campo `eta` salvato. */
+export function etaDaDataNascita(dataNascita: string | undefined): number | undefined {
+  if (!dataNascita) return undefined;
+  const nascita = new Date(dataNascita);
+  if (Number.isNaN(nascita.getTime())) return undefined;
+  const oggi = new Date();
+  let eta = oggi.getFullYear() - nascita.getFullYear();
+  const compleannoPassato =
+    oggi.getMonth() > nascita.getMonth() ||
+    (oggi.getMonth() === nascita.getMonth() && oggi.getDate() >= nascita.getDate());
+  if (!compleannoPassato) eta -= 1;
+  return eta;
+}
+
 export function slugify(text: string) {
   return text
     .toString()

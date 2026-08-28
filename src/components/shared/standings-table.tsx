@@ -1,23 +1,35 @@
 import Link from "next/link";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { FormBadges } from "@/components/shared/form-badges";
+import { FASCE, zonaPerPosizione } from "@/lib/coppe";
 import type { RigaClassifica, Squadra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function StandingsTable({
   righe,
   squadre,
-  highlightTop = 2,
-  highlightBottom = 1,
   compact = false,
+  /**
+   * Mostra il binario colorato con la zona di qualificazione accanto alla
+   * posizione. Va attivato solo sulla classifica generale: sulle classifiche
+   * parziali (casa, trasferta, attacco...) il posizionamento non determina
+   * l'accesso alle coppe, quindi indicarlo sarebbe fuorviante.
+   */
+  mostraCoppe = false,
+  /**
+   * Totale delle squadre del campionato: le fasce vanno calcolate sull'intera
+   * classifica anche quando qui se ne mostra solo un estratto (es. top 5 in home).
+   */
+  totaleSquadre,
 }: {
   righe: RigaClassifica[];
   squadre: Squadra[];
-  highlightTop?: number;
-  highlightBottom?: number;
   compact?: boolean;
+  mostraCoppe?: boolean;
+  totaleSquadre?: number;
 }) {
   const mappa = new Map(squadre.map((s) => [s.id, s]));
+  const totale = totaleSquadre ?? righe.length;
 
   return (
     <div className="relative rounded-2xl glass">
@@ -26,7 +38,7 @@ export function StandingsTable({
       <table className="w-full min-w-[640px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-            <th className="w-10 px-3 py-3 text-center">#</th>
+            <th className="w-12 px-3 py-3 text-center">#</th>
             <th className="px-2 py-3">Squadra</th>
             <th className="px-2 py-3 text-center">G</th>
             <th className="px-2 py-3 text-center">V</th>
@@ -40,33 +52,39 @@ export function StandingsTable({
             )}
             <th className="px-2 py-3 text-center">DR</th>
             <th className="px-2 py-3 text-center font-bold text-foreground">Pt</th>
+            {mostraCoppe && <th className="px-2 py-3 text-center">Coppa</th>}
             {!compact && <th className="px-3 py-3 text-center">Forma</th>}
           </tr>
         </thead>
         <tbody>
-          {righe.map((r, idx) => {
+          {righe.map((r) => {
             const squadra = mappa.get(r.squadraId);
             if (!squadra) return null;
-            const isTop = idx < highlightTop;
-            const isBottom = idx >= righe.length - highlightBottom;
+            const fascia = mostraCoppe ? FASCE[zonaPerPosizione(r.posizione, totale)] : undefined;
             return (
               <tr
                 key={r.squadraId}
-                className={cn(
-                  "border-b border-border/60 transition-colors last:border-0 hover:bg-white/[0.03]",
-                )}
+                className="border-b border-border/60 transition-colors last:border-0 hover:bg-white/[0.03]"
               >
-                <td className="px-3 py-3 text-center">
-                  <span
-                    className={cn(
-                      "mx-auto flex size-6 items-center justify-center rounded-md font-score text-xs font-bold",
-                      isTop && "bg-primary/20 text-primary-glow",
-                      isBottom && "bg-danger/20 text-danger",
-                      !isTop && !isBottom && "text-muted-foreground"
+                <td className="px-3 py-3">
+                  <div className="flex items-center justify-center gap-2">
+                    {fascia && (
+                      <span
+                        className="h-6 w-1 shrink-0 rounded-full"
+                        style={{ background: fascia.colore }}
+                        title={fascia.descrizione}
+                        aria-label={fascia.etichetta}
+                      />
                     )}
-                  >
-                    {r.posizione}
-                  </span>
+                    <span
+                      className={cn(
+                        "flex size-6 items-center justify-center rounded-md font-score text-xs font-bold",
+                        fascia?.zona === "esclusa" ? "text-danger" : "text-muted-foreground"
+                      )}
+                    >
+                      {r.posizione}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-2 py-3">
                   <Link href={`/squadre/${squadra.slug}`} className="flex items-center gap-2.5 font-semibold hover:text-primary-glow">
@@ -89,6 +107,23 @@ export function StandingsTable({
                   {r.golFatti - r.golSubiti}
                 </td>
                 <td className="px-2 py-3 text-center font-score text-base font-bold tabular-nums">{r.punti}</td>
+                {mostraCoppe && fascia && (
+                  <td className="px-2 py-3 text-center">
+                    <span
+                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                      style={{
+                        color: fascia.zona === "esclusa" ? "var(--muted-foreground)" : fascia.colore,
+                        background:
+                          fascia.zona === "esclusa"
+                            ? "rgba(255,255,255,0.05)"
+                            : `color-mix(in oklab, ${fascia.colore} 16%, transparent)`,
+                      }}
+                      title={fascia.descrizione}
+                    >
+                      {fascia.etichettaBreve}
+                    </span>
+                  </td>
+                )}
                 {!compact && (
                   <td className="px-3 py-3">
                     <div className="flex justify-center">

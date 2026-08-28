@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Minus, Plus, Trophy, Loader2 } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
+import { AdminMatchVotes } from "@/components/admin/admin-match-votes";
 import { MatchTimeline } from "@/components/match/timeline";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -259,6 +260,14 @@ export function AdminMatchControl({
           </Select>
         </CardContent>
       </Card>
+
+      <AdminMatchVotes
+        partita={partita}
+        casa={casa}
+        trasferta={trasferta}
+        rosterCasa={rosterCasa}
+        rosterTrasferta={rosterTrasferta}
+      />
 
       <div>
         <p className="mb-3 font-display text-base font-bold">Anteprima cronaca</p>

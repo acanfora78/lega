@@ -92,6 +92,7 @@ export default async function AdminDashboardPage() {
             <QuickLink href="/admin/giocatori" title="Gestisci Giocatori" desc="Anagrafica, ruoli, statistiche e trofei" />
             <QuickLink href="/admin/partite" title="Partite & Risultati" desc="Calendario, distinte, gol, cartellini e MVP" />
             <QuickLink href="/admin/news" title="News & Comunicati" desc="Pubblica articoli e comunicati ufficiali" />
+            <QuickLink href="/admin/disciplinare" title="Giudice Sportivo" desc="Squalifiche, diffide e conteggio cartellini" />
             <QuickLink href="/admin/media" title="Galleria Media" desc="Carica foto, video e highlights" />
             <QuickLink href="/admin/sponsor" title="Sponsor" desc="Gestisci i partner ufficiali della Lega" />
             <QuickLink href="/admin/notifiche" title="Notifiche Push" desc="Invia comunicazioni a tutti gli utenti" />

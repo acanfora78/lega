@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
+import { UnderQuarantaStar } from "@/components/player/under-quaranta-star";
 import { getSquadraById } from "@/lib/data";
 import type { Giocatore } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -29,8 +30,11 @@ export async function PlayerCard({
     >
       <PlayerAvatar nome={giocatore.nome} cognome={giocatore.cognome} fotoUrl={giocatore.fotoUrl} numero={giocatore.numeroMaglia} size={48} ring />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold leading-tight">
-          {giocatore.nome} {giocatore.cognome}
+        <p className="flex items-center gap-1 text-sm font-bold leading-tight">
+          <span className="truncate">
+            {giocatore.nome} {giocatore.cognome}
+          </span>
+          <UnderQuarantaStar eta={giocatore.eta} />
         </p>
         <p className="truncate text-xs text-muted-foreground">
           {giocatore.ruolo}

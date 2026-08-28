@@ -5,8 +5,10 @@ import { Container } from "@/components/shared/container";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { PitchBackdrop, StadiumLights } from "@/components/brand/pitch-art";
+import { UnderQuarantaStar } from "@/components/player/under-quaranta-star";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { isUnderQuaranta } from "@/lib/utils";
 import { getGiocatori, getGiocatoreById, getSquadraById, getStagioneById, getStagioneAttuale } from "@/lib/data";
 import { Ruler, Weight, Footprints, Cake, Trophy, ShieldHalf } from "lucide-react";
 
@@ -59,9 +61,15 @@ export default async function GiocatoreDetailPage({ params }: { params: Promise<
               <Badge variant="outline">#{giocatore.numeroMaglia}</Badge>
               {giocatore.id === squadra.capitanoId && <Badge variant="gold">Capitano</Badge>}
               {giocatore.id === squadra.viceCapitanoId && <Badge variant="outline">Vice Capitano</Badge>}
+              {isUnderQuaranta(giocatore.eta) && (
+                <Badge variant="gold">
+                  <UnderQuarantaStar eta={giocatore.eta} size={11} /> Under 40
+                </Badge>
+              )}
             </div>
-            <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-4xl">
+            <h1 className="flex flex-wrap items-center justify-center gap-2 font-display text-2xl font-extrabold tracking-tight sm:justify-start sm:text-4xl">
               {giocatore.nome} {giocatore.cognome}
+              <UnderQuarantaStar eta={giocatore.eta} size={20} />
             </h1>
             <Link href={`/squadre/${squadra.slug}`} className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary-glow">
               <TeamCrest nome={squadra.nome} colors={squadra.coloriSociali} logoUrl={squadra.logoUrl} size={20} />

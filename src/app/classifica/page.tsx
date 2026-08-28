@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { ClassificaTabs } from "@/components/shared/classifica-tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { LegendaCoppe } from "@/components/shared/legenda-coppe";
 import { Button } from "@/components/ui/button";
 import {
   getClassificaGenerale,
@@ -55,16 +55,7 @@ export default async function ClassificaPage() {
         </div>
       ) : (
         <>
-          <Card>
-            <CardContent className="p-4 text-xs text-muted-foreground sm:p-5">
-              <span className="mr-4 inline-flex items-center gap-1.5">
-                <span className="size-2.5 rounded-sm bg-primary/60" /> Zona Campione
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-2.5 rounded-sm bg-danger/60" /> Zona retrocessione
-              </span>
-            </CardContent>
-          </Card>
+          <LegendaCoppe totaleSquadre={generale.length} />
 
           <ClassificaTabs
             generale={generale}

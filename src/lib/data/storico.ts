@@ -302,6 +302,53 @@ export function getAlboVincitori(): { stagione: string; squadra: string }[] {
     .map((c) => ({ stagione: c.stagione, squadra: c.vincitore! }));
 }
 
+export interface VoceAlboOroStorico {
+  id: string;
+  stagione: string;
+  vincitore: string;
+  /** Vice-campione, dedotto dalla classifica finale quando disponibile. */
+  secondo?: string;
+  terzo?: string;
+  capocannoniere?: { giocatore: string; gol: number };
+  /** Vero per la stagione di cui si sta guardando la pagina. */
+  corrente?: boolean;
+}
+
+/**
+ * Albo d'oro di una competizione: tutte le stagioni concluse dello stesso
+ * torneo, dalla più recente alla più antica. Si usa il nome della competizione
+ * come chiave perché l'archivio storico non ha ancora un id di torneo proprio:
+ * ogni stagione è una voce a sé (vedi CampionatoStorico).
+ */
+export function getAlboOroCompetizione(nomeCompetizione: string, stagioneCorrenteId?: string): VoceAlboOroStorico[] {
+  return getCampionatiPassati()
+    .filter((c) => c.nomeCompetizione === nomeCompetizione && c.vincitore)
+    .map((c) => {
+      const capocannoniere = c.marcatori[0];
+      return {
+        id: c.id,
+        stagione: c.stagione,
+        vincitore: c.vincitore!,
+        secondo: c.classificaFinale.find((r) => r.posizione === 2)?.squadra,
+        terzo: c.classificaFinale.find((r) => r.posizione === 3)?.squadra,
+        capocannoniere: capocannoniere ? { giocatore: capocannoniere.giocatore, gol: capocannoniere.gol } : undefined,
+        corrente: c.id === stagioneCorrenteId,
+      };
+    });
+}
+
+/** Conteggio dei titoli vinti nella sola competizione indicata. */
+export function getTitoliCompetizione(nomeCompetizione: string): { squadra: string; titoli: number }[] {
+  const conteggio = new Map<string, number>();
+  CAMPIONATI_STORICI.filter((c) => c.nomeCompetizione === nomeCompetizione).forEach((c) => {
+    if (!c.vincitore) return;
+    conteggio.set(c.vincitore, (conteggio.get(c.vincitore) ?? 0) + 1);
+  });
+  return [...conteggio.entries()]
+    .map(([squadra, titoli]) => ({ squadra, titoli }))
+    .sort((a, b) => b.titoli - a.titoli || a.squadra.localeCompare(b.squadra));
+}
+
 export function getTitoliPerSquadra(): { squadra: string; titoli: number }[] {
   const conteggio = new Map<string, number>();
   CAMPIONATI_STORICI.forEach((c) => {

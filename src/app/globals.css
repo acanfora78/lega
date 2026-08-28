@@ -73,11 +73,16 @@
   --noise-opacity: 0.02;
 }
 
+/* Stessa mesh di colori del brand, riequilibrata per il fondo chiaro. */
 .light body {
   background:
-    radial-gradient(ellipse 120% 60% at 50% -10%, var(--pitch-800) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(217, 182, 97, 0.14) 0%, transparent 50%),
+    radial-gradient(ellipse 90% 55% at 50% -8%, color-mix(in oklab, var(--pitch-700) 70%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 45% at 100% 8%, color-mix(in oklab, var(--gold) 22%, transparent) 0%, transparent 58%),
+    radial-gradient(ellipse 55% 45% at 0% 32%, color-mix(in oklab, var(--primary) 12%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 85% 72%, color-mix(in oklab, var(--pitch-800) 70%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 65% 45% at 12% 100%, color-mix(in oklab, var(--gold-dim) 14%, transparent) 0%, transparent 58%),
     var(--background);
+  background-attachment: fixed;
 }
 
 .light .glass,
@@ -174,12 +179,22 @@ html {
   scroll-behavior: smooth;
 }
 
+/*
+ * Sfondo dell'interfaccia: mesh a colori misti costruita solo con i colori del
+ * brand della Lega (verde campo, emerald profondo, oro champagne). Le macchie
+ * sono fissate al viewport, così scorrendo le pagine il colore resta stabile
+ * dietro al contenuto invece di scorrere via con esso.
+ */
 body {
   position: relative;
   background:
-    radial-gradient(ellipse 120% 60% at 50% -10%, var(--pitch-800) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 45% at 105% 0%, rgba(217, 182, 97, 0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 55% at 50% -8%, color-mix(in oklab, var(--pitch-700) 85%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 45% at 100% 8%, color-mix(in oklab, var(--gold) 12%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 45% at 0% 32%, color-mix(in oklab, var(--primary) 14%, transparent) 0%, transparent 62%),
+    radial-gradient(ellipse 70% 50% at 85% 72%, color-mix(in oklab, var(--emerald-deep) 60%, transparent) 0%, transparent 62%),
+    radial-gradient(ellipse 65% 45% at 12% 100%, color-mix(in oklab, var(--gold-dim) 10%, transparent) 0%, transparent 60%),
     var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

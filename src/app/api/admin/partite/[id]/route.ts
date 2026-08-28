@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
-import { aggiornaRisultatoPartita, aggiornaStatoPartita, eliminaPartita, impostaMvpPartita, getStore } from "@/lib/store/file-store";
-import type { StatoPartita } from "@/lib/types";
+import {
+  aggiornaRisultatoPartita,
+  aggiornaStatoPartita,
+  eliminaPartita,
+  impostaMvpPartita,
+  impostaVotiPartita,
+  getStore,
+} from "@/lib/store/file-store";
+import type { StatoPartita, VotoPartita } from "@/lib/types";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireOrganizzatore();
@@ -16,6 +23,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     await aggiornaRisultatoPartita(id, body.golCasa, body.golTrasferta);
   }
   if (typeof body.mvpGiocatoreId === "string") await impostaMvpPartita(id, body.mvpGiocatoreId);
+  if (Array.isArray(body.voti)) {
+    const voti: VotoPartita[] = body.voti
+      .filter((v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null)
+      .map((v: Record<string, unknown>) => ({
+        giocatoreId: String(v.giocatoreId ?? ""),
+        voto: Number(v.voto),
+        ...(typeof v.nota === "string" && v.nota.trim() ? { nota: v.nota.trim() } : {}),
+      }));
+    await impostaVotiPartita(id, voti);
+  }
 
   const partita = (await getStore()).partite.find((p) => p.id === id);
   if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });

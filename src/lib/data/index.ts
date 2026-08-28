@@ -6,4 +6,5 @@ export * from "./news";
 export * from "./media";
 export * from "./sponsors";
 export * from "./awards";
+export * from "./pagelle";
 export * from "./search";

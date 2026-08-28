@@ -4,9 +4,15 @@ import { Container } from "@/components/shared/container";
 import { PitchBackdrop } from "@/components/brand/pitch-art";
 import { StandingsTableStorica } from "@/components/storico/standings-table-storica";
 import { MarcatoriStorici } from "@/components/storico/marcatori-storici";
+import { AlboOro } from "@/components/storico/albo-oro";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getCampionatiPassati, getCampionatoPassatoById } from "@/lib/data/storico";
+import {
+  getAlboOroCompetizione,
+  getCampionatiPassati,
+  getCampionatoPassatoById,
+  getTitoliCompetizione,
+} from "@/lib/data/storico";
 import { Trophy, AlertTriangle } from "lucide-react";
 
 export function generateStaticParams() {
@@ -60,6 +66,18 @@ export default async function CampionatoPassatoDetailPage({ params }: { params: 
           {campionato.marcatoriIncompleti && <span className="ml-2 text-xs font-normal text-muted-foreground">(parziale)</span>}
         </h2>
         <MarcatoriStorici marcatori={campionato.marcatori} />
+      </section>
+
+      <section>
+        <h2 className="mb-1 font-display text-xl font-bold tracking-tight">Albo d&apos;oro</h2>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Tutte le stagioni di {campionato.nomeCompetizione} con un vincitore registrato in archivio.
+        </p>
+        <AlboOro
+          voci={getAlboOroCompetizione(campionato.nomeCompetizione, campionato.id)}
+          titoli={getTitoliCompetizione(campionato.nomeCompetizione)}
+          nomeCompetizione={campionato.nomeCompetizione}
+        />
       </section>
 
       {(campionato.mvp || campionato.fairPlaySquadra || (campionato.premi && campionato.premi.length > 0)) && (
