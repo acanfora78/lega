@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { revalidateCompetizioni } from "@/lib/revalidate";
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   try {
     const store = await getStore();
     const competizione: Competizione = {
-      id: `competizione-${Date.now()}`,
+      id: `competizione-${randomUUID()}`,
       slug: slugify(nome),
       nome,
       tipo,

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { revalidatePartite } from "@/lib/revalidate";
@@ -13,7 +14,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const body = await request.json();
 
   const evento: EventoPartita = {
-    id: `evento-${Date.now()}`,
+    id: `evento-${randomUUID()}`,
     partitaId: id,
     minuto: Number(body.minuto) || 1,
     tempo: Number(body.minuto) > 45 ? 2 : 1,

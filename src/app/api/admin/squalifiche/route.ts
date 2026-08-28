@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { revalidateSqualifiche } from "@/lib/revalidate";
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
   const giornataDa = Number.isInteger(Number(body.giornataDa)) && Number(body.giornataDa) > 0 ? Number(body.giornataDa) : 1;
 
   const squalifica: Squalifica = {
-    id: `squalifica-${Date.now()}`,
+    id: `squalifica-${randomUUID()}`,
     stagioneId: store.stagioneAttualeId,
     giocatoreId,
     squadraId: giocatore.squadraId,
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
       const nomeCompleto = `${giocatore.nome} ${giocatore.cognome}`;
       const titolo = `Giudice Sportivo: ${giornate} ${giornate === 1 ? "giornata" : "giornate"} a ${nomeCompleto}`;
       const articolo: Articolo = {
-        id: `articolo-${Date.now()}`,
+        id: `articolo-${randomUUID()}`,
         slug: slugify(`${titolo}-${squalifica.id}`),
         titolo,
         sommario: `${nomeCompleto}${squadra ? ` (${squadra.nomeBreve})` : ""} è squalificato per ${ETICHETTE_MOTIVO[motivo]}.`,

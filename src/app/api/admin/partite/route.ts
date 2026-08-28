@@ -1,8 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { revalidatePartite } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaPartita, getStore } from "@/lib/store/file-store";
+import { parseDataOraRoma } from "@/lib/timezone";
 import type { Partita } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -16,14 +18,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Seleziona due squadre diverse." }, { status: 400 });
   }
 
-  const dataOra = new Date(`${body.data}T${body.ora || "15:00"}:00`);
+  const dataOra = parseDataOraRoma(String(body.data ?? ""), body.ora || "15:00");
   if (Number.isNaN(dataOra.getTime())) {
     return NextResponse.json({ error: "Data o ora della partita non valide." }, { status: 400 });
   }
 
   try {
     const partita: Partita = {
-      id: `partita-${Date.now()}`,
+      id: `partita-${randomUUID()}`,
       stagioneId: (await getStore()).stagioneAttualeId,
       giornata: Number(body.giornata) || 1,
       dataOra: dataOra.toISOString(),

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { revalidateNews } from "@/lib/revalidate";
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
   if (!titolo) return NextResponse.json({ error: "Il titolo è obbligatorio." }, { status: 400 });
 
   const articolo: Articolo = {
-    id: `articolo-${Date.now()}`,
+    id: `articolo-${randomUUID()}`,
     slug: slugify(titolo),
     titolo,
     sommario: String(body.sommario ?? ""),

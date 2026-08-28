@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { revalidateSponsor } from "@/lib/revalidate";
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   if (!nome) return NextResponse.json({ error: "Il nome è obbligatorio." }, { status: 400 });
 
   const sponsor: Sponsor = {
-    id: `sponsor-${Date.now()}`,
+    id: `sponsor-${randomUUID()}`,
     nome,
     logoUrl: String(body.logoUrl ?? ""),
     livello: body.livello ?? "silver",

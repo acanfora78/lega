@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   if (!titolo || !corpo) return NextResponse.json({ error: "Titolo e testo sono obbligatori." }, { status: 400 });
 
   const notifica: Notifica = {
-    id: `notifica-${Date.now()}`,
+    id: `notifica-${randomUUID()}`,
     tipo: body.tipo ?? "news",
     titolo,
     corpo,

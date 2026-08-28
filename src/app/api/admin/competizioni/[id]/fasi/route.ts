@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { revalidateCompetizioni } from "@/lib/revalidate";
@@ -17,7 +18,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!nome) return NextResponse.json({ error: "Il nome della fase è obbligatorio." }, { status: 400 });
 
   const fase: FaseCompetizione = {
-    id: `fase-${Date.now()}`,
+    id: `fase-${randomUUID()}`,
     nome,
     ordine: Number(body.ordine) || 1,
     formato: FORMATI.includes(body.formato) ? body.formato : "girone_unico",

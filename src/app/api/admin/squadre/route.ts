@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { revalidateSquadre } from "@/lib/revalidate";
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
   if (!nome) return NextResponse.json({ error: "Il nome è obbligatorio." }, { status: 400 });
 
   const squadra: Squadra = {
-    id: `squadra-${Date.now()}`,
+    id: `squadra-${randomUUID()}`,
     slug: slugify(nome),
     nome,
     nomeBreve: String(body.nomeBreve ?? nome),

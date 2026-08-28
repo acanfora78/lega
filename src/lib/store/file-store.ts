@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { cache } from "react";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { createReadOnlyClient } from "@/lib/supabase/read-only";
@@ -92,6 +93,8 @@ export interface LegaData {
   notifiche: Notifica[];
   squalifiche: Squalifica[];
   impostazioni: ImpostazioniLega;
+  /** Id delle migrazioni una-tantum sui dati già applicate (vedi `applicaMigrazioni`), per non ripeterle ad ogni lettura. */
+  migrazioni: string[];
 }
 
 const DATA_DIR = path.join(process.cwd(), ".data");
@@ -101,14 +104,18 @@ const isSupabaseConfigured = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+// Nessun valore indovinato (etichetta, date d'inizio/fine): l'organizzatore
+// vuole configurare la stagione lui stesso da Impostazioni, non trovarsi
+// un'etichetta "2026/2027" già scritta che potrebbe non corrispondere alla
+// stagione reale. L'oggetto stagione resta comunque necessario a livello
+// strutturale (partite e competizioni ci si agganciano con stagioneId), ma
+// nasce vuoto invece che precompilato.
 function stagioneCorrenteDefault(): Stagione {
-  const oggi = new Date();
-  const anno = oggi.getMonth() >= 6 ? oggi.getFullYear() : oggi.getFullYear() - 1; // luglio→giugno
   return {
     id: "stagione-corrente",
-    etichetta: `${anno}/${anno + 1}`,
-    dataInizio: `${anno}-09-01`,
-    dataFine: `${anno + 1}-06-30`,
+    etichetta: "",
+    dataInizio: "",
+    dataFine: "",
     attuale: true,
   };
 }
@@ -147,6 +154,7 @@ function statoIniziale(): LegaData {
         partitaSettimanaAutomatica: false,
       },
     },
+    migrazioni: [],
   };
 }
 
@@ -233,10 +241,44 @@ function isFilesystemReadOnly(err: unknown): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// MIGRAZIONI UNA-TANTUM SUI DATI GIÀ SALVATI
+// ---------------------------------------------------------------------------
+// Fino a questa correzione, l'orario delle partite (form manuale e import
+// CSV) veniva interpretato nel fuso del processo Node invece che in quello
+// di Roma: su Vercel (UTC) ogni partita inserita in piena ora legale (CEST,
+// UTC+2) finiva salvata 2 ore avanti. Le partite già inserite prima del fix
+// vanno corrette una volta sola; quelle nuove nascono già corrette perché
+// scritte con `parseDataOraRoma`.
+const MIGRAZIONE_ORARI_ROMA = "2026-08-orari-partite-fuso-roma";
+
+/** Applica le migrazioni non ancora segnate su `data`, mutandolo. Ritorna true se qualcosa è cambiato (va persistito). */
+function applicaMigrazioni(data: LegaData): boolean {
+  if (data.migrazioni.includes(MIGRAZIONE_ORARI_ROMA)) return false;
+  data.partite.forEach((p) => {
+    p.dataOra = new Date(new Date(p.dataOra).getTime() - 2 * 60 * 60 * 1000).toISOString();
+  });
+  data.migrazioni.push(MIGRAZIONE_ORARI_ROMA);
+  return true;
+}
+
+// ---------------------------------------------------------------------------
 // SELEZIONE BACKEND
 // ---------------------------------------------------------------------------
 async function load(): Promise<LegaData> {
-  return isSupabaseConfigured ? loadFromSupabase() : loadFromFile();
+  const data = isSupabaseConfigured ? await loadFromSupabase() : loadFromFile();
+  if (applicaMigrazioni(data)) {
+    // La correzione va già bene per la richiesta corrente (agisce sull'oggetto
+    // in memoria prima del return); il salvataggio è solo per renderla
+    // definitiva. Se la richiesta è pubblica e non autenticata, la RLS
+    // "scrittura_organizzatore" la rifiuta: si ritenta al prossimo load(),
+    // non deve mai far fallire una lettura pubblica.
+    try {
+      await persist(data);
+    } catch (err) {
+      console.warn("[store] Migrazione orari non ancora persistita (richiede una richiesta autenticata da organizzatore).", err);
+    }
+  }
+  return data;
 }
 
 async function persist(data: LegaData) {
@@ -622,8 +664,8 @@ export async function importaCalendarioCompetizione(
   const competizione = data.competizioni.find((c) => c.id === competizioneId);
   if (!competizione) return undefined;
 
-  const nuove: Partita[] = righe.map((r, i) => ({
-    id: `partita-${competizioneId}-${Date.now()}-${i}`,
+  const nuove: Partita[] = righe.map((r) => ({
+    id: `partita-${competizioneId}-${randomUUID()}`,
     stagioneId: data.stagioneAttualeId,
     competizioneId,
     faseId,
@@ -653,8 +695,8 @@ export async function importaCalendarioCompetizione(
 export async function importaCalendarioPartite(righe: RigaCalendarioImport[]) {
   const data = await load();
 
-  const nuove: Partita[] = righe.map((r, i) => ({
-    id: `partita-${Date.now()}-${i}`,
+  const nuove: Partita[] = righe.map((r) => ({
+    id: `partita-${randomUUID()}`,
     stagioneId: data.stagioneAttualeId,
     giornata: r.giornata,
     dataOra: r.dataOra,

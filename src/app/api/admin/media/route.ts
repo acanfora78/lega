@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { revalidateMedia } from "@/lib/revalidate";
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
   }
 
   const album: AlbumMedia = {
-    id: `album-${Date.now()}`,
+    id: `album-${randomUUID()}`,
     titolo: String(body.titolo ?? "Nuovo album"),
     copertinaUrl: String(body.copertinaUrl ?? itemsUrls[0].url),
     data: new Date().toISOString(),

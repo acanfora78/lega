@@ -1,4 +1,5 @@
 import { csvAOggetti } from "@/lib/csv";
+import { parseDataOraRoma } from "@/lib/timezone";
 import type { RigaCalendarioImport } from "@/lib/store/file-store";
 import type { Squadra } from "@/lib/types";
 
@@ -51,7 +52,7 @@ export function validaCalendarioCsv(csv: string, squadreAmmesse: Squadra[], cont
       return;
     }
 
-    const dataOra = new Date(`${r.data}T${r.ora || "15:00"}:00`);
+    const dataOra = parseDataOraRoma(r.data, r.ora || "15:00");
     if (Number.isNaN(dataOra.getTime())) {
       errori.push({ riga: numeroRiga, errore: `data/ora non valide: "${r.data} ${r.ora ?? ""}"` });
       return;

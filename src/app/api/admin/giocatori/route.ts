@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { erroreApi } from "@/lib/api-error";
 import { revalidateGiocatori } from "@/lib/revalidate";
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
   }
 
   const giocatore: Giocatore = {
-    id: `giocatore-${Date.now()}`,
+    id: `giocatore-${randomUUID()}`,
     slug: slugify(`${nome}-${cognome}`),
     nome,
     cognome,
