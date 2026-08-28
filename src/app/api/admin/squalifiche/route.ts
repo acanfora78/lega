@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { revalidateSqualifiche } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaArticolo, creaSqualifica, getStore } from "@/lib/store/file-store";
@@ -48,34 +49,38 @@ export async function POST(request: Request) {
     emessaIl: new Date().toISOString(),
   };
 
-  // Il comunicato disciplinare è opzionale: si pubblica solo se richiesto,
-  // così l'organizzatore può registrare un provvedimento senza annunciarlo
-  // prima che sia definitivo.
-  if (body.pubblicaComunicato) {
-    const squadra = store.squadre.find((s) => s.id === giocatore.squadraId);
-    const nomeCompleto = `${giocatore.nome} ${giocatore.cognome}`;
-    const titolo = `Giudice Sportivo: ${giornate} ${giornate === 1 ? "giornata" : "giornate"} a ${nomeCompleto}`;
-    const articolo: Articolo = {
-      id: `articolo-${Date.now()}`,
-      slug: slugify(`${titolo}-${squalifica.id}`),
-      titolo,
-      sommario: `${nomeCompleto}${squadra ? ` (${squadra.nomeBreve})` : ""} è squalificato per ${ETICHETTE_MOTIVO[motivo]}.`,
-      contenuto: [
-        `Il Giudice Sportivo ha inflitto ${giornate} ${giornate === 1 ? "giornata" : "giornate"} di squalifica a ${nomeCompleto}${squadra ? ` del ${squadra.nome}` : ""}, per ${ETICHETTE_MOTIVO[motivo]}.`,
-        squalifica.dettaglio ? `\n\n${squalifica.dettaglio}` : "",
-        `\n\nIl provvedimento decorre dalla giornata ${giornataDa}.`,
-      ].join(""),
-      copertinaUrl: "",
-      categoria: "disciplinare",
-      autore: "Giudice Sportivo",
-      pubblicatoIl: new Date().toISOString(),
-      squadreCorrelate: squadra ? [squadra.id] : undefined,
-    };
-    await creaArticolo(articolo);
-    squalifica.articoloId = articolo.id;
-  }
+  try {
+    // Il comunicato disciplinare è opzionale: si pubblica solo se richiesto,
+    // così l'organizzatore può registrare un provvedimento senza annunciarlo
+    // prima che sia definitivo.
+    if (body.pubblicaComunicato) {
+      const squadra = store.squadre.find((s) => s.id === giocatore.squadraId);
+      const nomeCompleto = `${giocatore.nome} ${giocatore.cognome}`;
+      const titolo = `Giudice Sportivo: ${giornate} ${giornate === 1 ? "giornata" : "giornate"} a ${nomeCompleto}`;
+      const articolo: Articolo = {
+        id: `articolo-${Date.now()}`,
+        slug: slugify(`${titolo}-${squalifica.id}`),
+        titolo,
+        sommario: `${nomeCompleto}${squadra ? ` (${squadra.nomeBreve})` : ""} è squalificato per ${ETICHETTE_MOTIVO[motivo]}.`,
+        contenuto: [
+          `Il Giudice Sportivo ha inflitto ${giornate} ${giornate === 1 ? "giornata" : "giornate"} di squalifica a ${nomeCompleto}${squadra ? ` del ${squadra.nome}` : ""}, per ${ETICHETTE_MOTIVO[motivo]}.`,
+          squalifica.dettaglio ? `\n\n${squalifica.dettaglio}` : "",
+          `\n\nIl provvedimento decorre dalla giornata ${giornataDa}.`,
+        ].join(""),
+        copertinaUrl: "",
+        categoria: "disciplinare",
+        autore: "Giudice Sportivo",
+        pubblicatoIl: new Date().toISOString(),
+        squadreCorrelate: squadra ? [squadra.id] : undefined,
+      };
+      await creaArticolo(articolo);
+      squalifica.articoloId = articolo.id;
+    }
 
-  await creaSqualifica(squalifica);
-  revalidateSqualifiche();
-  return NextResponse.json(squalifica, { status: 201 });
+    await creaSqualifica(squalifica);
+    revalidateSqualifiche();
+    return NextResponse.json(squalifica, { status: 201 });
+  } catch (err) {
+    return erroreApi(err, "Impossibile registrare la squalifica.");
+  }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { revalidatePartite } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaPartita, getStore } from "@/lib/store/file-store";
@@ -20,23 +21,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Data o ora della partita non valide." }, { status: 400 });
   }
 
-  const partita: Partita = {
-    id: `partita-${Date.now()}`,
-    stagioneId: (await getStore()).stagioneAttualeId,
-    giornata: Number(body.giornata) || 1,
-    dataOra: dataOra.toISOString(),
-    stato: "programmata",
-    squadraCasaId,
-    squadraTrasfertaId,
-    golCasa: 0,
-    golTrasferta: 0,
-    arbitro: String(body.arbitro ?? ""),
-    campo: String(body.campo ?? "Campo Sportivo Santa Teresa"),
-    eventi: [],
-    galleryUrls: [],
-  };
+  try {
+    const partita: Partita = {
+      id: `partita-${Date.now()}`,
+      stagioneId: (await getStore()).stagioneAttualeId,
+      giornata: Number(body.giornata) || 1,
+      dataOra: dataOra.toISOString(),
+      stato: "programmata",
+      squadraCasaId,
+      squadraTrasfertaId,
+      golCasa: 0,
+      golTrasferta: 0,
+      arbitro: String(body.arbitro ?? ""),
+      campo: String(body.campo ?? "Campo Sportivo Santa Teresa"),
+      eventi: [],
+      galleryUrls: [],
+    };
 
-  await creaPartita(partita);
-  revalidatePartite(partita.id);
-  return NextResponse.json(partita, { status: 201 });
+    await creaPartita(partita);
+    revalidatePartite(partita.id);
+    return NextResponse.json(partita, { status: 201 });
+  } catch (err) {
+    return erroreApi(err, "Impossibile creare la partita.");
+  }
 }

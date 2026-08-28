@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { revalidateMedia } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaAlbum } from "@/lib/store/file-store";
@@ -29,7 +30,11 @@ export async function POST(request: Request) {
     itemsUrls,
   };
 
-  await creaAlbum(album);
-  revalidateMedia();
-  return NextResponse.json(album, { status: 201 });
+  try {
+    await creaAlbum(album);
+    revalidateMedia();
+    return NextResponse.json(album, { status: 201 });
+  } catch (err) {
+    return erroreApi(err, "Impossibile salvare l'album.");
+  }
 }

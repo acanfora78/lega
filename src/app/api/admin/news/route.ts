@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { revalidateNews } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaArticolo } from "@/lib/store/file-store";
@@ -26,7 +27,11 @@ export async function POST(request: Request) {
     in_evidenza: Boolean(body.in_evidenza),
   };
 
-  await creaArticolo(articolo);
-  revalidateNews(articolo.slug);
-  return NextResponse.json(articolo, { status: 201 });
+  try {
+    await creaArticolo(articolo);
+    revalidateNews(articolo.slug);
+    return NextResponse.json(articolo, { status: 201 });
+  } catch (err) {
+    return erroreApi(err, "Impossibile pubblicare l'articolo.");
+  }
 }

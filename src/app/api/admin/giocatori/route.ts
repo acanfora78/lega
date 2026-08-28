@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { revalidateGiocatori } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaGiocatore, getStore } from "@/lib/store/file-store";
@@ -38,8 +39,12 @@ export async function POST(request: Request) {
     trofei: [],
   };
 
-  await creaGiocatore(giocatore);
-  const squadraSlug = (await getStore()).squadre.find((s) => s.id === squadraId)?.slug;
-  revalidateGiocatori({ giocatoreId: giocatore.id, squadraSlug });
-  return NextResponse.json(giocatore, { status: 201 });
+  try {
+    await creaGiocatore(giocatore);
+    const squadraSlug = (await getStore()).squadre.find((s) => s.id === squadraId)?.slug;
+    revalidateGiocatori({ giocatoreId: giocatore.id, squadraSlug });
+    return NextResponse.json(giocatore, { status: 201 });
+  } catch (err) {
+    return erroreApi(err, "Impossibile salvare il giocatore.");
+  }
 }

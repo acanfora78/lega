@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { revalidateSquadre } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaSquadra } from "@/lib/store/file-store";
@@ -29,7 +30,11 @@ export async function POST(request: Request) {
     galleryUrls: [],
   };
 
-  await creaSquadra(squadra);
+  try {
+    await creaSquadra(squadra);
+  } catch (err) {
+    return erroreApi(err, "Impossibile salvare la squadra.");
+  }
   revalidateSquadre(squadra.slug);
   return NextResponse.json(squadra, { status: 201 });
 }

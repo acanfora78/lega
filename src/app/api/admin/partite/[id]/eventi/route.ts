@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { revalidatePartite } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { aggiungiEventoPartita } from "@/lib/store/file-store";
@@ -21,8 +22,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     giocatoreId: body.giocatoreId || undefined,
   };
 
-  const partita = await aggiungiEventoPartita(id, evento);
-  if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });
-  revalidatePartite(partita.id);
-  return NextResponse.json(partita, { status: 201 });
+  try {
+    const partita = await aggiungiEventoPartita(id, evento);
+    if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });
+    revalidatePartite(partita.id);
+    return NextResponse.json(partita, { status: 201 });
+  } catch (err) {
+    return erroreApi(err, "Impossibile aggiungere l'evento alla cronaca.");
+  }
 }

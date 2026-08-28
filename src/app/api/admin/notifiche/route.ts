@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { inviaNotifica } from "@/lib/store/file-store";
 import type { Notifica } from "@/lib/types";
@@ -21,9 +22,13 @@ export async function POST(request: Request) {
     creataIl: new Date().toISOString(),
   };
 
-  // Nessuna pagina pubblica cacheata legge le notifiche in-app (solo il
-  // pannello admin, che è sempre dinamico e si aggiorna da sé via
-  // router.refresh()): non c'è quindi nessuna cache pubblica da invalidare.
-  await inviaNotifica(notifica);
-  return NextResponse.json(notifica, { status: 201 });
+  try {
+    // Nessuna pagina pubblica cacheata legge le notifiche in-app (solo il
+    // pannello admin, che è sempre dinamico e si aggiorna da sé via
+    // router.refresh()): non c'è quindi nessuna cache pubblica da invalidare.
+    await inviaNotifica(notifica);
+    return NextResponse.json(notifica, { status: 201 });
+  } catch (err) {
+    return erroreApi(err, "Impossibile salvare la notifica.");
+  }
 }

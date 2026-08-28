@@ -150,12 +150,16 @@ async function loadFromSupabase(): Promise<LegaData> {
 }
 
 async function persistToSupabase(data: LegaData) {
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { error } = await supabase.from("lega_store").upsert({ id: 1, data, updated_at: new Date().toISOString() });
-    if (error) throw error;
-  } catch (err) {
-    console.warn("[store] Scrittura su Supabase fallita.", err);
+  // A differenza di loadFromSupabase, qui l'errore NON va inghiottito: se una
+  // scrittura fallisce (sessione scaduta, RLS, rete) il chiamante deve saperlo,
+  // altrimenti la route API risponde "successo" mentre il database non è mai
+  // stato aggiornato — l'organizzatore vede sparire una riga e la ritrova al
+  // refresh successivo, perché quello che ha "salvato" non è mai stato scritto.
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.from("lega_store").upsert({ id: 1, data, updated_at: new Date().toISOString() });
+  if (error) {
+    console.error("[store] Scrittura su Supabase fallita.", error);
+    throw error;
   }
 }
 

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { eliminaNotifica } from "@/lib/store/file-store";
 
@@ -10,6 +11,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status });
 
   const { id } = await params;
-  await eliminaNotifica(id);
-  return NextResponse.json({ ok: true });
+  try {
+    await eliminaNotifica(id);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return erroreApi(err, "Impossibile eliminare la notifica.");
+  }
 }

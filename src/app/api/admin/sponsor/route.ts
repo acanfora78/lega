@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { revalidateSponsor } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaSponsor } from "@/lib/store/file-store";
@@ -20,7 +21,11 @@ export async function POST(request: Request) {
     descrizione: String(body.descrizione ?? ""),
   };
 
-  await creaSponsor(sponsor);
-  revalidateSponsor();
-  return NextResponse.json(sponsor, { status: 201 });
+  try {
+    await creaSponsor(sponsor);
+    revalidateSponsor();
+    return NextResponse.json(sponsor, { status: 201 });
+  } catch (err) {
+    return erroreApi(err, "Impossibile salvare lo sponsor.");
+  }
 }

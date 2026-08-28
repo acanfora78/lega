@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { erroreApi } from "@/lib/api-error";
 import { revalidateSqualifiche } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { aggiornaSqualifica, eliminaSqualifica } from "@/lib/store/file-store";
@@ -16,11 +17,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (Number.isInteger(Number(body.giornataDa)) && Number(body.giornataDa) >= 1) patch.giornataDa = Number(body.giornataDa);
   if (typeof body.dettaglio === "string") patch.dettaglio = body.dettaglio.trim() || undefined;
 
-  const aggiornata = await aggiornaSqualifica(id, patch);
-  if (!aggiornata) return NextResponse.json({ error: "Squalifica non trovata." }, { status: 404 });
-
-  revalidateSqualifiche();
-  return NextResponse.json(aggiornata);
+  try {
+    const aggiornata = await aggiornaSqualifica(id, patch);
+    if (!aggiornata) return NextResponse.json({ error: "Squalifica non trovata." }, { status: 404 });
+    revalidateSqualifiche();
+    return NextResponse.json(aggiornata);
+  } catch (err) {
+    return erroreApi(err, "Impossibile salvare le modifiche alla squalifica.");
+  }
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +32,11 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status });
 
   const { id } = await params;
-  await eliminaSqualifica(id);
-  revalidateSqualifiche();
-  return NextResponse.json({ ok: true });
+  try {
+    await eliminaSqualifica(id);
+    revalidateSqualifiche();
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return erroreApi(err, "Impossibile revocare la squalifica.");
+  }
 }
