@@ -105,6 +105,34 @@ export function AdminMatchControl({
     setGiocatoreForm("");
   }
 
+  async function eliminaEvento(eventoId: string) {
+    const evento = eventi.find((e) => e.id === eventoId);
+    if (!evento) return;
+
+    // Ottimistico: sparisce subito dalla cronaca e, se era un gol, il
+    // risultato torna indietro. In caso di errore entrambi tornano com'erano.
+    setEventi((prev) => prev.filter((e) => e.id !== eventoId));
+    const eraGol = evento.tipo === "goal" || evento.tipo === "rigore_segnato";
+    if (eraGol) {
+      if (evento.squadraId === casa.id) setGolCasa((g) => Math.max(0, g - 1));
+      else setGolTrasferta((g) => Math.max(0, g - 1));
+    }
+
+    try {
+      const res = await fetch(`/api/admin/partite/${partita.id}/eventi/${eventoId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Evento rimosso dalla cronaca");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setEventi((prev) => [...prev, evento]);
+      if (eraGol) {
+        if (evento.squadraId === casa.id) setGolCasa((g) => g + 1);
+        else setGolTrasferta((g) => g + 1);
+      }
+      toast.error(err instanceof Error ? err.message : "Impossibile rimuovere l'evento");
+    }
+  }
+
   async function salvaStato(v: StatoPartita) {
     setStato(v);
     try {
@@ -270,10 +298,15 @@ export function AdminMatchControl({
       />
 
       <div>
-        <p className="mb-3 font-display text-base font-bold">Anteprima cronaca</p>
+        <p className="mb-3 font-display text-base font-bold">Cronaca</p>
         <Card>
           <CardContent className="p-5">
-            <MatchTimeline partita={{ ...partita, eventi }} squadre={[casa, trasferta]} giocatori={[...rosterCasa, ...rosterTrasferta]} />
+            <MatchTimeline
+              partita={{ ...partita, eventi }}
+              squadre={[casa, trasferta]}
+              giocatori={[...rosterCasa, ...rosterTrasferta]}
+              onElimina={eliminaEvento}
+            />
           </CardContent>
         </Card>
       </div>

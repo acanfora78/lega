@@ -445,6 +445,30 @@ export async function aggiungiEventoPartita(id: string, evento: EventoPartita) {
   return partita;
 }
 
+/**
+ * Rimuove un evento aggiunto per errore alla cronaca. Specchia esattamente
+ * aggiungiEventoPartita al contrario: se l'evento era un gol, il risultato
+ * torna indietro di una rete (mai sotto zero, nel caso il punteggio fosse
+ * già stato corretto a mano nel frattempo); se la partita è conclusa la
+ * classifica viene ricalcolata di conseguenza.
+ */
+export async function eliminaEventoPartita(id: string, eventoId: string) {
+  const data = await load();
+  const partita = data.partite.find((p) => p.id === id);
+  if (!partita) return undefined;
+  const evento = partita.eventi.find((e) => e.id === eventoId);
+  if (!evento) return partita;
+
+  partita.eventi = partita.eventi.filter((e) => e.id !== eventoId);
+  if (evento.tipo === "goal" || evento.tipo === "rigore_segnato") {
+    if (evento.squadraId === partita.squadraCasaId) partita.golCasa = Math.max(0, partita.golCasa - 1);
+    else if (evento.squadraId === partita.squadraTrasfertaId) partita.golTrasferta = Math.max(0, partita.golTrasferta - 1);
+  }
+  await persist(data);
+  if (partita.stato === "conclusa") await ricalcolaClassifica();
+  return partita;
+}
+
 // ---------------------------------------------------------------------------
 // NEWS
 // ---------------------------------------------------------------------------
@@ -535,6 +559,12 @@ export async function inviaNotifica(notifica: Notifica) {
   data.notifiche.unshift(notifica);
   await persist(data);
   return notifica;
+}
+
+export async function eliminaNotifica(id: string) {
+  const data = await load();
+  data.notifiche = data.notifiche.filter((n) => n.id !== id);
+  await persist(data);
 }
 
 // ---------------------------------------------------------------------------

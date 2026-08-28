@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Send, Bell, Loader2 } from "lucide-react";
+import { Send, Bell, Loader2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ export function AdminNotificheComposer({ notifiche }: { notifiche: Notifica[] })
   const [titolo, setTitolo] = useState("");
   const [corpo, setCorpo] = useState("");
   const [tipo, setTipo] = useState("news");
+  const [nascoste, setNascoste] = useState<Set<string>>(new Set());
 
   async function invia() {
     if (!titolo.trim() || !corpo.trim()) {
@@ -40,6 +41,25 @@ export function AdminNotificheComposer({ notifiche }: { notifiche: Notifica[] })
       toast.error(err instanceof Error ? err.message : "Impossibile inviare la notifica");
     }
   }
+
+  async function elimina(id: string) {
+    setNascoste((prev) => new Set(prev).add(id));
+    try {
+      const res = await fetch(`/api/admin/notifiche/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Notifica eliminata dallo storico");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setNascoste((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      toast.error(err instanceof Error ? err.message : "Impossibile eliminare la notifica");
+    }
+  }
+
+  const notificheVisibili = notifiche.filter((n) => !nascoste.has(n.id));
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -80,20 +100,25 @@ export function AdminNotificheComposer({ notifiche }: { notifiche: Notifica[] })
 
       <div>
         <p className="mb-3 font-display text-base font-bold">Storico invii</p>
-        {notifiche.length === 0 ? (
+        {notificheVisibili.length === 0 ? (
           <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessuna notifica ancora inviata.</div>
         ) : (
           <div className="flex flex-col divide-y divide-border overflow-hidden rounded-2xl glass">
-            {notifiche.map((n) => (
-              <div key={n.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">{n.titolo}</p>
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{n.tipo}</span>
+            {notificheVisibili.map((n) => (
+              <div key={n.id} className="flex items-start justify-between gap-2 p-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-bold">{n.titolo}</p>
+                    <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">{n.tipo}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{n.corpo}</p>
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    {formatDateIt(n.creataIl)} · {formatTimeIt(n.creataIl)}
+                  </p>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{n.corpo}</p>
-                <p className="mt-1.5 text-[11px] text-muted-foreground">
-                  {formatDateIt(n.creataIl)} · {formatTimeIt(n.creataIl)}
-                </p>
+                <Button variant="ghost" size="icon" onClick={() => elimina(n.id)} aria-label="Elimina notifica" className="shrink-0">
+                  <Trash2 className="size-4 text-danger" />
+                </Button>
               </div>
             ))}
           </div>

@@ -1,3 +1,5 @@
+"use client";
+
 import { TeamCrest } from "@/components/brand/team-crest";
 import type { EventoPartita, Giocatore, Partita, Squadra } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -10,6 +12,7 @@ import {
   Square,
   StopCircle,
   Timer,
+  Trash2,
   Trophy,
 } from "lucide-react";
 
@@ -37,12 +40,15 @@ export function MatchTimeline({
   partita,
   squadre,
   giocatori,
+  onElimina,
 }: {
   partita: Partita;
   /** Squadre coinvolte (casa + trasferta), per stemma/nome nella cronaca. */
   squadre: Squadra[];
   /** Rose delle due squadre, per nome/numero dei protagonisti degli eventi. */
   giocatori: Giocatore[];
+  /** Se presente, mostra un pulsante elimina per evento (solo nel pannello admin). */
+  onElimina?: (eventoId: string) => void;
 }) {
   const squadreMap = new Map(squadre.map((s) => [s.id, s]));
   const giocatoriMap = new Map(giocatori.map((g) => [g.id, g]));
@@ -98,6 +104,16 @@ export function MatchTimeline({
                 {entrata && <p className="text-xs text-muted-foreground">Entra {entrata.nome} {entrata.cognome}</p>}
                 {e.dettaglio && <p className="text-xs text-muted-foreground">{e.dettaglio}</p>}
               </div>
+              {onElimina && (
+                <button
+                  type="button"
+                  onClick={() => onElimina(e.id)}
+                  aria-label="Elimina evento"
+                  className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-danger/15 hover:text-danger"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
             </div>
           </li>
         );

@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Settings2, Loader2 } from "lucide-react";
+import { Plus, Settings2, Loader2, Trash2 } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const [nascoste, setNascoste] = useState<Set<string>>(new Set());
   const squadreMap = useMemo(() => new Map(squadre.map((s) => [s.id, s])), [squadre]);
 
   async function crea(form: FormData) {
@@ -51,6 +52,26 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
     }
   }
 
+  async function elimina(id: string) {
+    if (!window.confirm("Eliminare definitivamente questa partita? Cronaca, formazioni e voti andranno persi.")) return;
+    setNascoste((prev) => new Set(prev).add(id));
+    try {
+      const res = await fetch(`/api/admin/partite/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Partita eliminata");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setNascoste((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      toast.error(err instanceof Error ? err.message : "Impossibile eliminare la partita");
+    }
+  }
+
+  const partiteVisibili = partite.filter((p) => !nascoste.has(p.id));
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-end gap-2">
@@ -64,7 +85,7 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
         <p className="text-sm text-muted-foreground">Servono almeno due squadre per programmare una partita: aggiungile prima dalla sezione Squadre.</p>
       )}
 
-      {partite.length === 0 ? (
+      {partiteVisibili.length === 0 ? (
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessuna partita ancora in calendario.</div>
       ) : (
         <div className="overflow-hidden rounded-2xl glass">
@@ -80,7 +101,7 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
               </tr>
             </thead>
             <tbody>
-              {[...partite]
+              {[...partiteVisibili]
                 .sort((a, b) => a.giornata - b.giornata)
                 .map((p) => {
                   const casa = squadreMap.get(p.squadraCasaId);
@@ -109,13 +130,18 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
                           {p.stato}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          href={`/admin/partite/${p.id}`}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold hover:bg-white/[0.1]"
-                        >
-                          <Settings2 className="size-3.5" /> Gestisci
-                        </Link>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Link
+                            href={`/admin/partite/${p.id}`}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold hover:bg-white/[0.1]"
+                          >
+                            <Settings2 className="size-3.5" /> Gestisci
+                          </Link>
+                          <Button variant="ghost" size="icon" onClick={() => elimina(p.id)} aria-label="Elimina partita">
+                            <Trash2 className="size-4 text-danger" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
