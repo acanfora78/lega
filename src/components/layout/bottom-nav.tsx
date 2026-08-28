@@ -18,7 +18,10 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 safe-bottom md:hidden">
-      <div className="mx-3 mb-3 glass-strong rounded-2xl shadow-[0_10px_40px_-12px_rgba(0,0,0,0.7)]">
+      {/* glass-nav invece di glass-strong: elemento fixed, sempre sotto lo
+          scroll del contenuto — un blur più leggero costa molto meno al
+          compositor senza cambiare percettibilmente l'effetto. */}
+      <div className="mx-3 mb-3 glass-nav rounded-2xl shadow-[0_10px_40px_-12px_rgba(0,0,0,0.7)]">
         <ul className="flex items-stretch justify-between px-1 py-1.5">
           {ITEMS.map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);

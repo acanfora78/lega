@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { inviaNotifica } from "@/lib/store/file-store";
 import type { Notifica } from "@/lib/types";
@@ -22,7 +21,9 @@ export async function POST(request: Request) {
     creataIl: new Date().toISOString(),
   };
 
+  // Nessuna pagina pubblica cacheata legge le notifiche in-app (solo il
+  // pannello admin, che è sempre dinamico e si aggiorna da sé via
+  // router.refresh()): non c'è quindi nessuna cache pubblica da invalidare.
   await inviaNotifica(notifica);
-  revalidatePath("/", "layout");
   return NextResponse.json(notifica, { status: 201 });
 }

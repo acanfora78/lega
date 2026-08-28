@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidateImpostazioni } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { aggiornaImpostazioni } from "@/lib/store/file-store";
 
@@ -9,6 +9,6 @@ export async function PATCH(request: Request) {
 
   const patch = await request.json();
   const impostazioni = await aggiornaImpostazioni(patch);
-  revalidatePath("/", "layout");
+  revalidateImpostazioni();
   return NextResponse.json(impostazioni);
 }

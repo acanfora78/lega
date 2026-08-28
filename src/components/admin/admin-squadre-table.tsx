@@ -25,6 +25,9 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
   const [open, setOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
+  // Nasconde subito la riga eliminata: il round-trip di rete arriva dopo,
+  // ma il click deve sembrare immediato. Ricompare se la richiesta fallisce.
+  const [nascosti, setNascosti] = useState<Set<string>>(new Set());
 
   function apriNuovo() {
     setEditing(null);
@@ -67,15 +70,23 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
   }
 
   async function elimina(id: string) {
+    setNascosti((prev) => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/admin/squadre/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Squadra rimossa");
       startTransition(() => router.refresh());
     } catch (err) {
+      setNascosti((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast.error(err instanceof Error ? err.message : "Impossibile rimuovere la squadra");
     }
   }
+
+  const datiVisibili = dati.filter(({ squadra }) => !nascosti.has(squadra.id));
 
   return (
     <div className="flex flex-col gap-4">
@@ -86,7 +97,7 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
         </Button>
       </div>
 
-      {dati.length === 0 ? (
+      {datiVisibili.length === 0 ? (
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessuna squadra ancora registrata.</div>
       ) : (
         <div className="overflow-hidden rounded-2xl glass">
@@ -101,7 +112,7 @@ export function AdminSquadreTable({ dati }: { dati: Riga[] }) {
               </tr>
             </thead>
             <tbody>
-              {dati.map(({ squadra, riga }) => (
+              {datiVisibili.map(({ squadra, riga }) => (
                 <tr key={squadra.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5 font-semibold">

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidateSponsor } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaSponsor } from "@/lib/store/file-store";
 import type { Sponsor } from "@/lib/types";
@@ -21,6 +21,6 @@ export async function POST(request: Request) {
   };
 
   await creaSponsor(sponsor);
-  revalidatePath("/", "layout");
+  revalidateSponsor();
   return NextResponse.json(sponsor, { status: 201 });
 }

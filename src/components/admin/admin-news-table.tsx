@@ -21,6 +21,7 @@ export function AdminNewsTable({ articoli }: { articoli: Articolo[] }) {
   const [editing, setEditing] = useState<Articolo | null>(null);
   const [open, setOpen] = useState(false);
   const [copertinaUrl, setCopertinaUrl] = useState("");
+  const [nascosti, setNascosti] = useState<Set<string>>(new Set());
 
   function nuovo() {
     setEditing(null);
@@ -58,15 +59,23 @@ export function AdminNewsTable({ articoli }: { articoli: Articolo[] }) {
   }
 
   async function elimina(id: string) {
+    setNascosti((prev) => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/admin/news/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Articolo eliminato");
       startTransition(() => router.refresh());
     } catch (err) {
+      setNascosti((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast.error(err instanceof Error ? err.message : "Impossibile eliminare l'articolo");
     }
   }
+
+  const articoliVisibili = articoli.filter((a) => !nascosti.has(a.id));
 
   return (
     <div className="flex flex-col gap-4">
@@ -76,7 +85,7 @@ export function AdminNewsTable({ articoli }: { articoli: Articolo[] }) {
           <Plus className="size-4" /> Nuovo articolo
         </Button>
       </div>
-      {articoli.length === 0 ? (
+      {articoliVisibili.length === 0 ? (
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessun articolo pubblicato.</div>
       ) : (
         <div className="overflow-hidden rounded-2xl glass">
@@ -90,7 +99,7 @@ export function AdminNewsTable({ articoli }: { articoli: Articolo[] }) {
               </tr>
             </thead>
             <tbody>
-              {articoli.map((a) => (
+              {articoliVisibili.map((a) => (
                 <tr key={a.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
                   <td className="px-4 py-3 font-semibold">{a.titolo}</td>
                   <td className="px-2 py-3">

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePartite } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import {
   aggiornaRisultatoPartita,
@@ -36,7 +36,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const partita = (await getStore()).partite.find((p) => p.id === id);
   if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });
-  revalidatePath("/", "layout");
+  revalidatePartite(partita.id);
   return NextResponse.json(partita);
 }
 
@@ -46,6 +46,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   await eliminaPartita(id);
-  revalidatePath("/", "layout");
+  revalidatePartite(id);
   return NextResponse.json({ ok: true });
 }

@@ -20,6 +20,7 @@ export function AdminMediaGrid({ album }: { album: AlbumMedia[] }) {
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const [nascosti, setNascosti] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
 
   function apriNuovo() {
@@ -67,15 +68,23 @@ export function AdminMediaGrid({ album }: { album: AlbumMedia[] }) {
   }
 
   async function elimina(id: string) {
+    setNascosti((prev) => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/admin/media/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Album rimosso");
       startTransition(() => router.refresh());
     } catch (err) {
+      setNascosti((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast.error(err instanceof Error ? err.message : "Impossibile rimuovere l'album");
     }
   }
+
+  const albumVisibili = album.filter((a) => !nascosti.has(a.id));
 
   return (
     <div className="flex flex-col gap-4">
@@ -86,11 +95,11 @@ export function AdminMediaGrid({ album }: { album: AlbumMedia[] }) {
         </Button>
       </div>
 
-      {album.length === 0 ? (
+      {albumVisibili.length === 0 ? (
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessun album ancora caricato.</div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {album.map((a) => (
+          {albumVisibili.map((a) => (
             <div key={a.id} className="group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-2xl glass bg-pitch-gradient p-3.5">
               {a.copertinaUrl && (
                 // eslint-disable-next-line @next/next/no-img-element -- copertina caricata dall'organizzatore su Supabase Storage

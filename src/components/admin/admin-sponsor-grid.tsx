@@ -19,6 +19,7 @@ export function AdminSponsorGrid({ sponsor }: { sponsor: Sponsor[] }) {
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState("");
+  const [nascosti, setNascosti] = useState<Set<string>>(new Set());
 
   async function salva(form: FormData) {
     try {
@@ -43,15 +44,23 @@ export function AdminSponsorGrid({ sponsor }: { sponsor: Sponsor[] }) {
   }
 
   async function elimina(id: string) {
+    setNascosti((prev) => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/admin/sponsor/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Sponsor rimosso");
       startTransition(() => router.refresh());
     } catch (err) {
+      setNascosti((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast.error(err instanceof Error ? err.message : "Impossibile rimuovere lo sponsor");
     }
   }
+
+  const sponsorVisibili = sponsor.filter((s) => !nascosti.has(s.id));
 
   return (
     <div className="flex flex-col gap-4">
@@ -62,11 +71,11 @@ export function AdminSponsorGrid({ sponsor }: { sponsor: Sponsor[] }) {
         </Button>
       </div>
 
-      {sponsor.length === 0 ? (
+      {sponsorVisibili.length === 0 ? (
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">Nessuno sponsor ancora registrato.</div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {sponsor.map((s) => (
+          {sponsorVisibili.map((s) => (
             <Card key={s.id}>
               <CardContent className="flex items-start justify-between gap-3 p-4">
                 <div className="flex items-start gap-3">

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidateNews } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaArticolo } from "@/lib/store/file-store";
 import type { Articolo } from "@/lib/types";
@@ -27,6 +27,6 @@ export async function POST(request: Request) {
   };
 
   await creaArticolo(articolo);
-  revalidatePath("/", "layout");
+  revalidateNews(articolo.slug);
   return NextResponse.json(articolo, { status: 201 });
 }

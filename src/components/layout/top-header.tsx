@@ -22,7 +22,11 @@ export function TopHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="safe-top sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur-xl">
+    // backdrop-blur-md invece di -xl: su un elemento sticky il blur va
+    // ricalcolato ad ogni frame di scroll (il contenuto sotto cambia in
+    // continuazione), quindi un raggio più piccolo alleggerisce sensibilmente
+    // il lavoro del compositor senza perdere l'effetto vetro smerigliato.
+    <header className="safe-top sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <LegaMonogram size={34} />

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePartite } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { aggiungiEventoPartita } from "@/lib/store/file-store";
 import type { EventoPartita } from "@/lib/types";
@@ -23,6 +23,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const partita = await aggiungiEventoPartita(id, evento);
   if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });
-  revalidatePath("/", "layout");
+  revalidatePartite(partita.id);
   return NextResponse.json(partita, { status: 201 });
 }

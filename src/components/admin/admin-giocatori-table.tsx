@@ -24,6 +24,10 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
   const [nuovoOpen, setNuovoOpen] = useState(false);
   const [fotoUrlModifica, setFotoUrlModifica] = useState("");
   const [fotoUrlNuovo, setFotoUrlNuovo] = useState("");
+  // Nasconde subito la riga eliminata invece di aspettare il giro completo
+  // di rete: router.refresh() la farà sparire "per davvero" poco dopo, ma
+  // il click deve sembrare immediato. In caso di errore la riga ricompare.
+  const [nascosti, setNascosti] = useState<Set<string>>(new Set());
   const squadreMap = useMemo(() => new Map(squadre.map((s) => [s.id, s])), [squadre]);
 
   function apriModifica(g: Giocatore) {
@@ -38,19 +42,26 @@ export function AdminGiocatoriTable({ giocatori, squadre, stagioneId }: { giocat
 
   const filtrati = useMemo(() => {
     return giocatori.filter((g) => {
+      if (nascosti.has(g.id)) return false;
       const matchQuery = `${g.nome} ${g.cognome}`.toLowerCase().includes(query.toLowerCase());
       const matchSquadra = squadraFiltro === "tutte" || g.squadraId === squadraFiltro;
       return matchQuery && matchSquadra;
     });
-  }, [giocatori, query, squadraFiltro]);
+  }, [giocatori, nascosti, query, squadraFiltro]);
 
   async function elimina(id: string) {
+    setNascosti((prev) => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/admin/giocatori/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Giocatore rimosso dalla rosa");
       startTransition(() => router.refresh());
     } catch (err) {
+      setNascosti((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast.error(err instanceof Error ? err.message : "Impossibile rimuovere il giocatore");
     }
   }

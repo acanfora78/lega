@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidateSquadre } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
-import { aggiornaSquadra, eliminaSquadra } from "@/lib/store/file-store";
+import { aggiornaSquadra, eliminaSquadra, getStore } from "@/lib/store/file-store";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireOrganizzatore();
@@ -11,7 +11,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const patch = await request.json();
   const aggiornata = await aggiornaSquadra(id, patch);
   if (!aggiornata) return NextResponse.json({ error: "Squadra non trovata." }, { status: 404 });
-  revalidatePath("/", "layout");
+  revalidateSquadre(aggiornata.slug);
   return NextResponse.json(aggiornata);
 }
 
@@ -20,7 +20,8 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status });
 
   const { id } = await params;
+  const slug = (await getStore()).squadre.find((s) => s.id === id)?.slug;
   await eliminaSquadra(id);
-  revalidatePath("/", "layout");
+  revalidateSquadre(slug);
   return NextResponse.json({ ok: true });
 }

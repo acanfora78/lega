@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidateSqualifiche } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaArticolo, creaSqualifica, getStore } from "@/lib/store/file-store";
 import type { Articolo, MotivoSqualifica, Squalifica } from "@/lib/types";
@@ -76,6 +76,6 @@ export async function POST(request: Request) {
   }
 
   await creaSqualifica(squalifica);
-  revalidatePath("/", "layout");
+  revalidateSqualifiche();
   return NextResponse.json(squalifica, { status: 201 });
 }

@@ -49,6 +49,7 @@ export function AdminSqualifiche({
   const [giornataDa, setGiornataDa] = useState(String(Math.max(1, giornataCorrente)));
   const [dettaglio, setDettaglio] = useState("");
   const [pubblicaComunicato, setPubblicaComunicato] = useState(true);
+  const [nascosti, setNascosti] = useState<Set<string>>(new Set());
 
   const squadreMap = useMemo(() => new Map(squadre.map((s) => [s.id, s])), [squadre]);
   const diffidati = useMemo(() => conteggi.filter((c) => c.diffidato), [conteggi]);
@@ -100,15 +101,23 @@ export function AdminSqualifiche({
   }
 
   async function elimina(id: string) {
+    setNascosti((prev) => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/admin/squalifiche/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Squalifica revocata");
       startTransition(() => router.refresh());
     } catch (err) {
+      setNascosti((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       toast.error(err instanceof Error ? err.message : "Impossibile revocare la squalifica");
     }
   }
+
+  const squalificheVisibili = squalifiche.filter((s) => !nascosti.has(s.id));
 
   return (
     <div className="flex flex-col gap-5">
@@ -132,7 +141,7 @@ export function AdminSqualifiche({
         </Button>
       </div>
 
-      {squalifiche.length === 0 ? (
+      {squalificheVisibili.length === 0 ? (
         <div className="rounded-2xl glass p-10 text-center text-sm text-muted-foreground">
           Nessuna squalifica registrata in questa stagione.
         </div>
@@ -152,7 +161,7 @@ export function AdminSqualifiche({
                 </tr>
               </thead>
               <tbody>
-                {squalifiche.map((s) => {
+                {squalificheVisibili.map((s) => {
                   const squadra = squadreMap.get(s.squadraId);
                   return (
                     <tr key={s.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidateSquadre } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { creaSquadra } from "@/lib/store/file-store";
 import type { Squadra } from "@/lib/types";
@@ -30,6 +30,6 @@ export async function POST(request: Request) {
   };
 
   await creaSquadra(squadra);
-  revalidatePath("/", "layout");
+  revalidateSquadre(squadra.slug);
   return NextResponse.json(squadra, { status: 201 });
 }

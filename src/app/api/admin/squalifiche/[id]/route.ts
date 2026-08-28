@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidateSqualifiche } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
 import { aggiornaSqualifica, eliminaSqualifica } from "@/lib/store/file-store";
 import type { Squalifica } from "@/lib/types";
@@ -19,7 +19,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const aggiornata = await aggiornaSqualifica(id, patch);
   if (!aggiornata) return NextResponse.json({ error: "Squalifica non trovata." }, { status: 404 });
 
-  revalidatePath("/", "layout");
+  revalidateSqualifiche();
   return NextResponse.json(aggiornata);
 }
 
@@ -29,6 +29,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   await eliminaSqualifica(id);
-  revalidatePath("/", "layout");
+  revalidateSqualifiche();
   return NextResponse.json({ ok: true });
 }

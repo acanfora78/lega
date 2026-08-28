@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidateGiocatori } from "@/lib/revalidate";
 import { requireOrganizzatore } from "@/lib/supabase/require-organizzatore";
-import { creaGiocatore } from "@/lib/store/file-store";
+import { creaGiocatore, getStore } from "@/lib/store/file-store";
 import type { Giocatore, Ruolo } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 
@@ -39,6 +39,7 @@ export async function POST(request: Request) {
   };
 
   await creaGiocatore(giocatore);
-  revalidatePath("/", "layout");
+  const squadraSlug = (await getStore()).squadre.find((s) => s.id === squadraId)?.slug;
+  revalidateGiocatori({ giocatoreId: giocatore.id, squadraSlug });
   return NextResponse.json(giocatore, { status: 201 });
 }
