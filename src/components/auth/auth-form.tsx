@@ -17,6 +17,42 @@ function destinazioneSicura(next: string | undefined) {
   return undefined;
 }
 
+/**
+ * Traduce l'errore di Supabase in un messaggio che dica cosa fare.
+ *
+ * Il caso importante è il fallimento di rete: Safari lo riporta come
+ * "Load failed" e Chrome come "Failed to fetch", stringhe che all'utente non
+ * dicono nulla e che vengono facilmente scambiate per una password sbagliata.
+ * In realtà significano che il browser non ha proprio raggiunto Supabase —
+ * quasi sempre perché il progetto è in pausa (il piano gratuito sospende i
+ * progetti inattivi) oppure perché l'URL configurato è errato.
+ */
+function messaggioErrore(err: unknown): { titolo: string; dettaglio?: string } {
+  const grezzo = err instanceof Error ? err.message : String(err);
+  const rete = /load failed|failed to fetch|networkerror|fetch failed/i.test(grezzo);
+
+  if (rete) {
+    return {
+      titolo: "Impossibile raggiungere il server di autenticazione",
+      dettaglio:
+        "Non è un problema di email o password. Il progetto Supabase potrebbe essere in pausa (il piano gratuito sospende i progetti inattivi: riattivalo dalla dashboard) oppure l'indirizzo configurato non è corretto.",
+    };
+  }
+
+  if (/invalid login credentials/i.test(grezzo)) {
+    return { titolo: "Email o password non corretti" };
+  }
+
+  if (/email not confirmed/i.test(grezzo)) {
+    return {
+      titolo: "Email non ancora confermata",
+      dettaglio: "Conferma l'indirizzo dal link ricevuto, oppure segna l'utente come confermato dalla dashboard Supabase.",
+    };
+  }
+
+  return { titolo: grezzo || "Si è verificato un errore" };
+}
+
 export function AuthForm({ mode, next }: { mode: "login" | "signup"; next?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -52,7 +88,8 @@ export function AuthForm({ mode, next }: { mode: "login" | "signup"; next?: stri
       }
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Si è verificato un errore");
+      const { titolo, dettaglio } = messaggioErrore(err);
+      toast.error(titolo, dettaglio ? { description: dettaglio, duration: 12000 } : undefined);
     } finally {
       setLoading(false);
     }
