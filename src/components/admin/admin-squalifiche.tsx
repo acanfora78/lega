@@ -189,9 +189,19 @@ export function AdminSqualifiche({
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end">
-                          <Button variant="ghost" size="icon" onClick={() => elimina(s.id)} aria-label="Revoca">
-                            <Trash2 className="size-4 text-danger" />
-                          </Button>
+                          {/* Le squalifiche automatiche non sono righe salvate:
+                              sono dedotte dal regolamento sugli eventi delle
+                              partite. Non si revocano da qui — si corregge il
+                              tabellino della gara che le ha originate. */}
+                          {s.automatica ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              automatica
+                            </Badge>
+                          ) : (
+                            <Button variant="ghost" size="icon" onClick={() => elimina(s.id)} aria-label="Revoca">
+                              <Trash2 className="size-4 text-danger" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

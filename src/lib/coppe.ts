@@ -7,18 +7,21 @@ import type { FasciaCoppa, ZonaCoppa } from "@/lib/types";
 // Tutte le altre ricevono una fascia; le prime posizioni vanno a Champions,
 // Europa e Conference (nell'ordine), il resto entra in Coppa Italia.
 //
-// Il numero di squadre della Lega cambia di stagione in stagione, quindi le
-// ampiezze non sono costanti: si parte dagli obiettivi "pieni" (4/1/1, sul
-// modello Serie A) e si restringono in ordine inverso di prestigio finché non
-// entrano nei posti realmente disponibili. Così una lega da 6 squadre non
-// finisce per qualificare tutti alla Champions, e una da 20 mantiene lo
-// schema classico.
+// Lo schema della Lega è a fasce di quattro: 1ª-4ª in Champions, 5ª-8ª in
+// Europa League, 9ª-12ª in Conference League, tutte le altre in Coppa Italia
+// tranne le ultime due.
+//
+// Il numero di squadre cambia di stagione in stagione, quindi le ampiezze non
+// sono costanti: si parte dagli obiettivi "pieni" (4/4/4) e si restringono in
+// ordine inverso di prestigio finché non entrano nei posti realmente
+// disponibili. Così una lega da 6 squadre non finisce per qualificare tutti
+// alla Champions, e una da 20 mantiene lo schema pieno.
 // ============================================================================
 
 const OBIETTIVI: { zona: Exclude<ZonaCoppa, "coppa_italia" | "esclusa">; posti: number }[] = [
   { zona: "champions", posti: 4 },
-  { zona: "europa", posti: 1 },
-  { zona: "conference", posti: 1 },
+  { zona: "europa", posti: 4 },
+  { zona: "conference", posti: 4 },
 ];
 
 /** Posizioni finali sempre escluse dalle coppe. */

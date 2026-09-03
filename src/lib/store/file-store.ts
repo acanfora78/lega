@@ -251,14 +251,39 @@ function isFilesystemReadOnly(err: unknown): boolean {
 // scritte con `parseDataOraRoma`.
 const MIGRAZIONE_ORARI_ROMA = "2026-08-orari-partite-fuso-roma";
 
+// Il -2h della migrazione precedente era giusto per le gare in ora legale, ma
+// ha sovracorretto di un'ora quelle che si giocano in ora solare: dal cambio
+// d'ora di fine ottobre lo scarto originale era di un'ora sola, non di due.
+// Nel calendario della Lega la frattura cade fra la 7ª e l'8ª giornata: le
+// prime sette restano come sono, dall'8ª alla 27ª va restituita l'ora tolta
+// in eccesso.
+const MIGRAZIONE_ORA_SOLARE = "2026-09-orari-giornate-8-27-piu-un-ora";
+const GIORNATA_DA_ORA_SOLARE = 8;
+const GIORNATA_A_ORA_SOLARE = 27;
+
 /** Applica le migrazioni non ancora segnate su `data`, mutandolo. Ritorna true se qualcosa è cambiato (va persistito). */
 function applicaMigrazioni(data: LegaData): boolean {
-  if (data.migrazioni.includes(MIGRAZIONE_ORARI_ROMA)) return false;
-  data.partite.forEach((p) => {
-    p.dataOra = new Date(new Date(p.dataOra).getTime() - 2 * 60 * 60 * 1000).toISOString();
-  });
-  data.migrazioni.push(MIGRAZIONE_ORARI_ROMA);
-  return true;
+  let modificato = false;
+
+  if (!data.migrazioni.includes(MIGRAZIONE_ORARI_ROMA)) {
+    data.partite.forEach((p) => {
+      p.dataOra = new Date(new Date(p.dataOra).getTime() - 2 * 60 * 60 * 1000).toISOString();
+    });
+    data.migrazioni.push(MIGRAZIONE_ORARI_ROMA);
+    modificato = true;
+  }
+
+  if (!data.migrazioni.includes(MIGRAZIONE_ORA_SOLARE)) {
+    data.partite
+      .filter((p) => p.giornata >= GIORNATA_DA_ORA_SOLARE && p.giornata <= GIORNATA_A_ORA_SOLARE)
+      .forEach((p) => {
+        p.dataOra = new Date(new Date(p.dataOra).getTime() + 60 * 60 * 1000).toISOString();
+      });
+    data.migrazioni.push(MIGRAZIONE_ORA_SOLARE);
+    modificato = true;
+  }
+
+  return modificato;
 }
 
 // ---------------------------------------------------------------------------
@@ -557,9 +582,15 @@ export async function aggiungiEventoPartita(id: string, evento: EventoPartita) {
   const partita = data.partite.find((p) => p.id === id);
   if (!partita) return undefined;
   partita.eventi.push(evento);
+  // L'autorete è registrata sulla squadra di chi la segna, ma la rete va
+  // all'avversaria: senza questa distinzione il risultato si sposterebbe
+  // dalla parte sbagliata.
   if (evento.tipo === "goal" || evento.tipo === "rigore_segnato") {
     if (evento.squadraId === partita.squadraCasaId) partita.golCasa += 1;
     else if (evento.squadraId === partita.squadraTrasfertaId) partita.golTrasferta += 1;
+  } else if (evento.tipo === "autogoal") {
+    if (evento.squadraId === partita.squadraCasaId) partita.golTrasferta += 1;
+    else if (evento.squadraId === partita.squadraTrasfertaId) partita.golCasa += 1;
   }
   await persist(data);
   if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
@@ -584,6 +615,9 @@ export async function eliminaEventoPartita(id: string, eventoId: string) {
   if (evento.tipo === "goal" || evento.tipo === "rigore_segnato") {
     if (evento.squadraId === partita.squadraCasaId) partita.golCasa = Math.max(0, partita.golCasa - 1);
     else if (evento.squadraId === partita.squadraTrasfertaId) partita.golTrasferta = Math.max(0, partita.golTrasferta - 1);
+  } else if (evento.tipo === "autogoal") {
+    if (evento.squadraId === partita.squadraCasaId) partita.golTrasferta = Math.max(0, partita.golTrasferta - 1);
+    else if (evento.squadraId === partita.squadraTrasfertaId) partita.golCasa = Math.max(0, partita.golCasa - 1);
   }
   await persist(data);
   if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);

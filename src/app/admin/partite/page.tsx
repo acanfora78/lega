@@ -2,13 +2,15 @@ import type { Metadata } from "next";
 import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminPartiteTable } from "@/components/admin/admin-partite-table";
+import { AdminComunicato } from "@/components/admin/admin-comunicato";
 import { CalendarioCsvUpload } from "@/components/admin/calendario-csv-upload";
-import { getPartite, getSquadre } from "@/lib/data";
+import { getGiornataCorrente, getPartite, getSquadre } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Partite & Risultati" };
 
 export default async function AdminPartitePage() {
-  const [partite, squadre] = await Promise.all([getPartite(), getSquadre()]);
+  const [partite, squadre, giornataCorrente] = await Promise.all([getPartite(), getSquadre(), getGiornataCorrente()]);
+  const giornate = [...new Set(partite.map((p) => p.giornata))].sort((a, b) => a - b);
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div>
@@ -18,6 +20,7 @@ export default async function AdminPartitePage() {
       </div>
       <AdminShell>
         <div className="flex flex-col gap-6">
+          {giornate.length > 0 && <AdminComunicato giornate={giornate} giornataCorrente={giornataCorrente} />}
           <CalendarioCsvUpload endpoint="/api/admin/partite/calendario" nomeFileModello="calendario-campionato.csv" />
           <AdminPartiteTable partite={partite} squadre={squadre} />
         </div>

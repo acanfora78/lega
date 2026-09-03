@@ -1,78 +1,63 @@
 import { legaData } from "@/lib/mock";
+import {
+  calcolaPosizioniDisciplinari,
+  cartelliniDiGiornata,
+  REGOLAMENTO_FIGC_DILETTANTI,
+  squalificheAutomatiche,
+  type CartellinoGiornata,
+  type PosizioneDisciplinare,
+  type SqualificaAutomatica,
+} from "@/lib/disciplina-figc";
 import type { ConteggioDisciplinare, Giocatore, Squadra, Squalifica } from "@/lib/types";
 
 // ============================================================================
 // GIUSTIZIA SPORTIVA
 // ----------------------------------------------------------------------------
-// I conteggi di ammonizioni ed espulsioni NON sono un campo da compilare a
-// mano: sono ricavati dagli eventi delle partite concluse, la stessa sorgente
-// che alimenta la cronaca e la classifica fair play. Così il tabellino resta
-// l'unico posto in cui l'organizzatore inserisce i cartellini, e i numeri non
-// possono divergere tra le pagine.
+// Ammonizioni, diffide, espulsioni e squalifiche per cumulo NON sono campi da
+// compilare: escono dal regolamento applicato agli eventi delle partite
+// concluse (src/lib/disciplina-figc.ts), la stessa sorgente di cronaca,
+// classifica e statistiche individuali. Basta inserire i cartellini nel
+// tabellino: diffidati e squalificati si aggiornano da soli.
 //
-// Le squalifiche invece sono decisioni del Giudice Sportivo e vengono immesse
-// dall'area organizzatore.
+// Restano manuali — e si sommano a quelle automatiche — solo le decisioni che
+// il regolamento non può dedurre: condotta antisportiva, reclami accolti,
+// aggravamenti decisi dal Giudice Sportivo.
 // ============================================================================
 
-/** Ammonizioni che fanno scattare la giornata di squalifica. */
-export const AMMONIZIONI_PER_SQUALIFICA = 4;
+/** Ammonizioni che fanno scattare la giornata di squalifica (impianto FIGC/LND). */
+export const AMMONIZIONI_PER_SQUALIFICA = REGOLAMENTO_FIGC_DILETTANTI.ammonizioniPerSqualifica;
 
-/** Un giocatore è "diffidato" quando gli manca un solo giallo alla squalifica. */
-function calcolaDiffida(ammonizioni: number) {
-  const nelCiclo = ammonizioni % AMMONIZIONI_PER_SQUALIFICA;
-  const mancanti = AMMONIZIONI_PER_SQUALIFICA - nelCiclo;
-  return { ammonizioniVersoSqualifica: mancanti, diffidato: nelCiclo === AMMONIZIONI_PER_SQUALIFICA - 1 };
+/** Partite del campionato principale della stagione in corso: l'ambito disciplinare. */
+async function partiteDelCampionato() {
+  const { partite, giocatori, stagioneAttualeId } = await legaData();
+  return {
+    partite: partite.filter((p) => !p.competizioneId && p.stagioneId === stagioneAttualeId),
+    giocatori,
+    stagioneAttualeId,
+  };
+}
+
+export async function getPosizioniDisciplinari(): Promise<PosizioneDisciplinare[]> {
+  const { partite, giocatori } = await partiteDelCampionato();
+  return calcolaPosizioniDisciplinari(partite, giocatori);
 }
 
 /**
- * Conteggio cartellini per giocatore sulla stagione in corso, derivato dagli
- * eventi delle partite concluse. Il secondo giallo conta sia come ammonizione
- * sia come espulsione, come nel referto arbitrale.
+ * Conteggio cartellini per giocatore, nella forma storica consumata dalle
+ * pagine. `ammonizioni` è il totale a referto; il conteggio valido ai fini
+ * del cumulo (che esclude i gialli assorbiti da una doppia ammonizione)
+ * guida invece diffida e squalifiche.
  */
 export async function getConteggiDisciplinari(): Promise<ConteggioDisciplinare[]> {
-  const { partite, giocatori, stagioneAttualeId } = await legaData();
-
-  const accumulo = new Map<string, { ammonizioni: number; espulsioni: number; secondiGialli: number }>();
-  const tocca = (giocatoreId: string) => {
-    const corrente = accumulo.get(giocatoreId) ?? { ammonizioni: 0, espulsioni: 0, secondiGialli: 0 };
-    accumulo.set(giocatoreId, corrente);
-    return corrente;
-  };
-
-  partite
-    .filter((p) => p.stagioneId === stagioneAttualeId && p.stato === "conclusa")
-    .forEach((p) => {
-      p.eventi.forEach((e) => {
-        if (!e.giocatoreId) return;
-        const voce = tocca(e.giocatoreId);
-        if (e.tipo === "ammonizione") voce.ammonizioni += 1;
-        else if (e.tipo === "secondo_giallo") {
-          voce.ammonizioni += 1;
-          voce.secondiGialli += 1;
-          voce.espulsioni += 1;
-        } else if (e.tipo === "espulsione") voce.espulsioni += 1;
-      });
-    });
-
-  const mappaGiocatori = new Map(giocatori.map((g) => [g.id, g]));
-
-  return [...accumulo.entries()]
-    .map(([giocatoreId, voce]) => {
-      const giocatore = mappaGiocatori.get(giocatoreId);
-      if (!giocatore) return undefined;
-      const { ammonizioniVersoSqualifica, diffidato } = calcolaDiffida(voce.ammonizioni);
-      return {
-        giocatoreId,
-        squadraId: giocatore.squadraId,
-        ammonizioni: voce.ammonizioni,
-        espulsioni: voce.espulsioni,
-        secondiGialli: voce.secondiGialli,
-        ammonizioniVersoSqualifica,
-        diffidato,
-      } satisfies ConteggioDisciplinare;
-    })
-    .filter((c): c is ConteggioDisciplinare => c !== undefined)
-    .sort((a, b) => b.espulsioni - a.espulsioni || b.ammonizioni - a.ammonizioni);
+  return (await getPosizioniDisciplinari()).map((p) => ({
+    giocatoreId: p.giocatoreId,
+    squadraId: p.squadraId,
+    ammonizioni: p.ammonizioniTotali,
+    espulsioni: p.espulsioni,
+    secondiGialli: p.doppieAmmonizioni,
+    ammonizioniVersoSqualifica: p.ammonizioniVersoSqualifica,
+    diffidato: p.diffidato,
+  }));
 }
 
 export interface ConteggioRisolto extends ConteggioDisciplinare {
@@ -99,11 +84,40 @@ export async function getDiffidati(): Promise<ConteggioRisolto[]> {
   return (await getConteggiDisciplinariRisolti()).filter((c) => c.diffidato);
 }
 
-export async function getSqualifiche(): Promise<Squalifica[]> {
+/**
+ * Squalifiche automatiche dedotte dal regolamento, tradotte nella stessa forma
+ * di quelle manuali così che le pagine possano trattarle insieme.
+ */
+export async function getSqualificheAutomatiche(): Promise<Squalifica[]> {
+  const [posizioni, { stagioneAttualeId }] = await Promise.all([getPosizioniDisciplinari(), legaData()]);
+  return squalificheAutomatiche(posizioni).map((s: SqualificaAutomatica) => ({
+    // Id deterministico: ricalcolando si ottiene sempre lo stesso, quindi non
+    // si accumulano duplicati e le chiavi React restano stabili.
+    id: `auto-${s.partitaId}-${s.giocatoreId}-${s.motivo}-${s.giornataOrigine}`,
+    stagioneId: stagioneAttualeId,
+    giocatoreId: s.giocatoreId,
+    squadraId: s.squadraId,
+    giornate: s.giornate,
+    giornataDa: s.giornataDa,
+    motivo: s.motivo === "doppia_ammonizione" ? "espulsione" : s.motivo,
+    dettaglio: s.dettaglio,
+    giornataOrigine: s.giornataOrigine,
+    emessaIl: new Date().toISOString(),
+  }));
+}
+
+/** Solo i provvedimenti inseriti a mano dal Giudice Sportivo. */
+export async function getSqualificheManuali(): Promise<Squalifica[]> {
   const { squalifiche = [], stagioneAttualeId } = await legaData();
-  return squalifiche
-    .filter((s) => s.stagioneId === stagioneAttualeId)
-    .sort((a, b) => new Date(b.emessaIl).getTime() - new Date(a.emessaIl).getTime());
+  return squalifiche.filter((s) => s.stagioneId === stagioneAttualeId);
+}
+
+/** Automatiche + manuali, dalla più recente. */
+export async function getSqualifiche(): Promise<Squalifica[]> {
+  const [automatiche, manuali] = await Promise.all([getSqualificheAutomatiche(), getSqualificheManuali()]);
+  return [...automatiche, ...manuali].sort(
+    (a, b) => (b.giornataDa - a.giornataDa) || new Date(b.emessaIl).getTime() - new Date(a.emessaIl).getTime()
+  );
 }
 
 export interface SqualificaRisolta extends Squalifica {
@@ -112,6 +126,8 @@ export interface SqualificaRisolta extends Squalifica {
   /** Ultima giornata in cui il provvedimento è ancora in corso. */
   giornataA: number;
   attiva: boolean;
+  /** true se dedotta dal regolamento, false se decisa dal Giudice Sportivo. */
+  automatica: boolean;
 }
 
 /**
@@ -131,6 +147,7 @@ export async function getSqualificheRisolte(giornataCorrente: number): Promise<S
       squadra: mappaSquadre.get(s.squadraId),
       giornataA,
       attiva: giornataCorrente <= giornataA,
+      automatica: s.id.startsWith("auto-"),
     };
   });
 }
@@ -138,4 +155,10 @@ export async function getSqualificheRisolte(giornataCorrente: number): Promise<S
 /** Solo i provvedimenti ancora da scontare. */
 export async function getSqualificheAttive(giornataCorrente: number): Promise<SqualificaRisolta[]> {
   return (await getSqualificheRisolte(giornataCorrente)).filter((s) => s.attiva);
+}
+
+/** Cartellini di una singola giornata, per il comunicato ufficiale. */
+export async function getCartelliniDiGiornata(giornata: number): Promise<CartellinoGiornata[]> {
+  const { partite } = await partiteDelCampionato();
+  return cartelliniDiGiornata(partite, giornata);
 }

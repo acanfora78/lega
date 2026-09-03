@@ -15,11 +15,18 @@ import { Badge } from "@/components/ui/badge";
 import type { EventoPartita, Giocatore, Partita, Squadra, StatoPartita, TipoEvento } from "@/lib/types";
 
 const STATI: StatoPartita[] = ["programmata", "live", "intervallo", "conclusa", "rinviata", "sospesa"];
+// "Seconda ammonizione" è una voce a sé e non un secondo giallo qualsiasi:
+// nell'impianto FIGC l'espulsione che ne deriva assorbe i due gialli, che non
+// entrano nel cumulo verso la squalifica. Senza questa voce il tabellino non
+// potrebbe distinguerla e il conteggio delle diffide sarebbe sbagliato.
 const TIPI_EVENTO: { value: TipoEvento; label: string }[] = [
   { value: "goal", label: "Gol" },
   { value: "rigore_segnato", label: "Rigore segnato" },
+  { value: "autogoal", label: "Autorete" },
+  { value: "assist", label: "Assist" },
   { value: "ammonizione", label: "Ammonizione" },
-  { value: "espulsione", label: "Espulsione" },
+  { value: "secondo_giallo", label: "Seconda ammonizione (espulsione)" },
+  { value: "espulsione", label: "Espulsione diretta" },
   { value: "sostituzione", label: "Sostituzione" },
 ];
 
@@ -89,6 +96,10 @@ export function AdminMatchControl({
     if (tipoForm === "goal" || tipoForm === "rigore_segnato") {
       if (squadraForm === casa.id) setGolCasa((g) => g + 1);
       else setGolTrasferta((g) => g + 1);
+    } else if (tipoForm === "autogoal") {
+      // L'autorete vale per l'avversaria, come lato server.
+      if (squadraForm === casa.id) setGolTrasferta((g) => g + 1);
+      else setGolCasa((g) => g + 1);
     }
     try {
       const res = await fetch(`/api/admin/partite/${partita.id}/eventi`, {
@@ -113,8 +124,11 @@ export function AdminMatchControl({
     // risultato torna indietro. In caso di errore entrambi tornano com'erano.
     setEventi((prev) => prev.filter((e) => e.id !== eventoId));
     const eraGol = evento.tipo === "goal" || evento.tipo === "rigore_segnato";
-    if (eraGol) {
-      if (evento.squadraId === casa.id) setGolCasa((g) => Math.max(0, g - 1));
+    const eraAutorete = evento.tipo === "autogoal";
+    // L'autorete aveva accreditato l'avversaria: si scala da quella.
+    const golDiCasa = eraAutorete ? evento.squadraId !== casa.id : evento.squadraId === casa.id;
+    if (eraGol || eraAutorete) {
+      if (golDiCasa) setGolCasa((g) => Math.max(0, g - 1));
       else setGolTrasferta((g) => Math.max(0, g - 1));
     }
 
@@ -125,8 +139,8 @@ export function AdminMatchControl({
       startTransition(() => router.refresh());
     } catch (err) {
       setEventi((prev) => [...prev, evento]);
-      if (eraGol) {
-        if (evento.squadraId === casa.id) setGolCasa((g) => g + 1);
+      if (eraGol || eraAutorete) {
+        if (golDiCasa) setGolCasa((g) => g + 1);
         else setGolTrasferta((g) => g + 1);
       }
       toast.error(err instanceof Error ? err.message : "Impossibile rimuovere l'evento");

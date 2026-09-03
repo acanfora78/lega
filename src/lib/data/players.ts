@@ -1,5 +1,6 @@
 import { legaData } from "@/lib/mock";
-import type { Giocatore } from "@/lib/types";
+import { calcolaStatisticheDerivate, type StatisticheDerivate } from "@/lib/statistiche-derivate";
+import type { Giocatore, StatisticheStagionaliGiocatore } from "@/lib/types";
 
 export async function getGiocatori(): Promise<Giocatore[]> {
   return (await legaData()).giocatori;
@@ -15,84 +16,110 @@ export async function getGiocatoriDellaSquadra(squadraId: string): Promise<Gioca
     .sort((a, b) => a.numeroMaglia - b.numeroMaglia);
 }
 
-async function statoStagioneCorrente(g: Giocatore) {
-  const { stagioneAttualeId } = await legaData();
-  return g.statistiche.find((s) => s.stagioneId === stagioneAttualeId);
+// ---------------------------------------------------------------------------
+// CLASSIFICHE INDIVIDUALI
+// ---------------------------------------------------------------------------
+// Tutte partono da src/lib/statistiche-derivate.ts, cioè dagli eventi delle
+// partite concluse. Prima leggevano `Giocatore.statistiche`, un campo che
+// nessuna route ha mai scritto: marcatori, assist, presenze e MVP restavano
+// perciò vuoti anche con il tabellino compilato. La forma del risultato
+// ({ giocatore, stat }) è rimasta identica, così le pagine che le consumano
+// non hanno dovuto cambiare.
+// ---------------------------------------------------------------------------
+
+export interface VoceClassificaGiocatore {
+  giocatore: Giocatore;
+  stat: StatisticheStagionaliGiocatore;
+}
+
+/** Adatta le statistiche derivate alla forma storica consumata dai componenti. */
+function comeStatStagionale(derivata: StatisticheDerivate, stagioneId: string): StatisticheStagionaliGiocatore {
+  return {
+    stagioneId,
+    squadraId: derivata.squadraId,
+    presenze: derivata.presenze,
+    minutiGiocati: 0,
+    goal: derivata.goal,
+    assist: derivata.assist,
+    ammonizioni: derivata.ammonizioni,
+    espulsioni: derivata.espulsioni,
+    mediaVoto: derivata.mediaVoto,
+    mvp: derivata.mvp,
+    cleanSheet: derivata.cleanSheet,
+    golSubiti: derivata.golSubiti,
+  };
+}
+
+/**
+ * Statistiche derivate di tutti i giocatori, sulle sole partite del campionato
+ * principale della stagione in corso (le competizioni aggiuntive hanno le
+ * proprie pagine e non devono confluire nelle classifiche del campionato).
+ */
+async function statisticheStagione(): Promise<VoceClassificaGiocatore[]> {
+  const { partite, giocatori, stagioneAttualeId } = await legaData();
+  const delCampionato = partite.filter((p) => !p.competizioneId && p.stagioneId === stagioneAttualeId);
+  const derivate = calcolaStatisticheDerivate(delCampionato, giocatori);
+
+  // calcolaStatisticheDerivate restituisce una voce per ogni giocatore
+  // passato, anche a zero: il filter scarta solo eventuali disallineamenti.
+  return giocatori
+    .map((giocatore) => {
+      const derivata = derivate.get(giocatore.id);
+      return derivata ? { giocatore, stat: comeStatStagionale(derivata, stagioneAttualeId) } : undefined;
+    })
+    .filter((v): v is VoceClassificaGiocatore => v !== undefined);
+}
+
+async function classificaPer(
+  valore: (s: StatisticheStagionaliGiocatore) => number,
+  limit: number,
+  filtro: (v: VoceClassificaGiocatore) => boolean = () => true
+): Promise<VoceClassificaGiocatore[]> {
+  return (await statisticheStagione())
+    .filter((v) => filtro(v) && valore(v.stat) > 0)
+    .sort((a, b) => valore(b.stat) - valore(a.stat))
+    .slice(0, limit);
 }
 
 export async function getClassificaMarcatori(limit = 10) {
-  const giocatori = await getGiocatori();
-  const conStat = await Promise.all(giocatori.map(async (g) => ({ giocatore: g, stat: await statoStagioneCorrente(g) })));
-  return conStat
-    .filter((x) => (x.stat?.goal ?? 0) > 0)
-    .sort((a, b) => (b.stat!.goal - a.stat!.goal) || (b.stat!.assist - a.stat!.assist))
+  return (await statisticheStagione())
+    .filter((v) => v.stat.goal > 0)
+    .sort((a, b) => b.stat.goal - a.stat.goal || b.stat.assist - a.stat.assist)
     .slice(0, limit);
 }
 
 export async function getClassificaAssist(limit = 10) {
-  const giocatori = await getGiocatori();
-  const conStat = await Promise.all(giocatori.map(async (g) => ({ giocatore: g, stat: await statoStagioneCorrente(g) })));
-  return conStat
-    .filter((x) => (x.stat?.assist ?? 0) > 0)
-    .sort((a, b) => b.stat!.assist - a.stat!.assist)
-    .slice(0, limit);
+  return classificaPer((s) => s.assist, limit);
 }
 
 export async function getClassificaAmmonizioni(limit = 10) {
-  const giocatori = await getGiocatori();
-  const conStat = await Promise.all(giocatori.map(async (g) => ({ giocatore: g, stat: await statoStagioneCorrente(g) })));
-  return conStat
-    .filter((x) => (x.stat?.ammonizioni ?? 0) > 0)
-    .sort((a, b) => b.stat!.ammonizioni - a.stat!.ammonizioni)
-    .slice(0, limit);
+  return classificaPer((s) => s.ammonizioni, limit);
 }
 
 export async function getClassificaEspulsioni(limit = 10) {
-  const giocatori = await getGiocatori();
-  const conStat = await Promise.all(giocatori.map(async (g) => ({ giocatore: g, stat: await statoStagioneCorrente(g) })));
-  return conStat
-    .filter((x) => (x.stat?.espulsioni ?? 0) > 0)
-    .sort((a, b) => b.stat!.espulsioni - a.stat!.espulsioni)
-    .slice(0, limit);
+  return classificaPer((s) => s.espulsioni, limit);
 }
 
 export async function getClassificaMvp(limit = 10) {
-  const giocatori = await getGiocatori();
-  const conStat = await Promise.all(giocatori.map(async (g) => ({ giocatore: g, stat: await statoStagioneCorrente(g) })));
-  return conStat
-    .filter((x) => (x.stat?.mvp ?? 0) > 0)
-    .sort((a, b) => b.stat!.mvp - a.stat!.mvp)
-    .slice(0, limit);
+  return classificaPer((s) => s.mvp, limit);
 }
 
 export async function getClassificaPresenze(limit = 10) {
-  const giocatori = await getGiocatori();
-  const conStat = await Promise.all(giocatori.map(async (g) => ({ giocatore: g, stat: await statoStagioneCorrente(g) })));
-  return conStat
-    .filter((x) => (x.stat?.presenze ?? 0) > 0)
-    .sort((a, b) => b.stat!.presenze - a.stat!.presenze)
-    .slice(0, limit);
+  return classificaPer((s) => s.presenze, limit);
 }
 
 export async function getClassificaCleanSheet(limit = 10) {
-  const giocatori = (await getGiocatori()).filter((g) => g.ruolo === "Portiere");
-  const conStat = await Promise.all(giocatori.map(async (g) => ({ giocatore: g, stat: await statoStagioneCorrente(g) })));
-  return conStat
-    .filter((x) => (x.stat?.cleanSheet ?? 0) > 0)
-    .sort((a, b) => (b.stat!.cleanSheet ?? 0) - (a.stat!.cleanSheet ?? 0))
-    .slice(0, limit);
+  return classificaPer((s) => s.cleanSheet ?? 0, limit, (v) => v.giocatore.ruolo === "Portiere");
 }
 
+/** Portieri ordinati per media gol subiti a partita (meno è meglio). */
 export async function getMigliorPortiere(limit = 10) {
-  const giocatori = (await getGiocatori()).filter((g) => g.ruolo === "Portiere");
-  const conStat = await Promise.all(giocatori.map(async (g) => ({ giocatore: g, stat: await statoStagioneCorrente(g) })));
-  return conStat
-    .filter((x) => (x.stat?.presenze ?? 0) > 0)
-    .sort((a, b) => (a.stat!.golSubiti ?? 99) / a.stat!.presenze - (b.stat!.golSubiti ?? 99) / b.stat!.presenze)
+  return (await statisticheStagione())
+    .filter((v) => v.giocatore.ruolo === "Portiere" && v.stat.presenze > 0)
+    .sort((a, b) => (a.stat.golSubiti ?? 0) / a.stat.presenze - (b.stat.golSubiti ?? 0) / b.stat.presenze)
     .slice(0, limit);
 }
 
 export async function getStatisticaStagionale(giocatoreId: string) {
-  const g = await getGiocatoreById(giocatoreId);
-  return g ? statoStagioneCorrente(g) : undefined;
+  return (await statisticheStagione()).find((v) => v.giocatore.id === giocatoreId)?.stat;
 }
