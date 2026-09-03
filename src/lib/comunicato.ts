@@ -112,7 +112,12 @@ export function generaComunicatoGiornata(data: LegaData, giornata: number): Comu
 
   const righeDiffidati = posizioni
     .filter((p) => p.diffidato)
-    .map((p) => `${descriviCartellino(p.giocatoreId, p.squadraId)} — ${p.ammonizioni} ammonizioni`);
+    .map(
+      (p) =>
+        `${descriviCartellino(p.giocatoreId, p.squadraId)} — ${p.ammonizioni} ammonizioni: alla ${
+          p.prossimaSogliaSqualifica
+        }ª scatta la squalifica`
+    );
 
   // Provvedimenti automatici maturati proprio in questa giornata, più quelli
   // manuali del Giudice Sportivo che partono dalla giornata successiva.
@@ -152,7 +157,8 @@ export function generaComunicatoGiornata(data: LegaData, giornata: number): Comu
   const nota =
     "I provvedimenti per somma di ammonizioni e per espulsione sono determinati automaticamente " +
     "sulla base dei tabellini di gara, secondo l'impianto disciplinare FIGC/LND adottato dalla Lega: " +
-    "squalifica di una giornata ogni quattro ammonizioni, con diffida alla terza; una giornata per " +
+    "squalifica di una giornata alla 4ª ammonizione, alla 7ª, alla 9ª e successivamente ad ogni " +
+    "ammonizione, con diffida a chi si trova a un solo cartellino dalla misura; una giornata per " +
     "espulsione, con aggravante di recidiva; i due gialli che determinano l'espulsione non concorrono " +
     "al cumulo. Restano riservate al Giudice Sportivo le sanzioni per condotta e i reclami.";
 

@@ -24,8 +24,11 @@ import type { ConteggioDisciplinare, Giocatore, Squadra, Squalifica } from "@/li
 // aggravamenti decisi dal Giudice Sportivo.
 // ============================================================================
 
-/** Ammonizioni che fanno scattare la giornata di squalifica (impianto FIGC/LND). */
-export const AMMONIZIONI_PER_SQUALIFICA = REGOLAMENTO_FIGC_DILETTANTI.ammonizioniPerSqualifica;
+/**
+ * Le quote di ammonizioni che fanno scattare la giornata di squalifica
+ * (impianto FIGC/LND): 4ª, 7ª, 9ª e poi ogni ammonizione successiva.
+ */
+export const SOGLIE_AMMONIZIONI = REGOLAMENTO_FIGC_DILETTANTI.soglieAmmonizioni;
 
 /** Partite del campionato principale della stagione in corso: l'ambito disciplinare. */
 async function partiteDelCampionato() {
@@ -56,6 +59,7 @@ export async function getConteggiDisciplinari(): Promise<ConteggioDisciplinare[]
     espulsioni: p.espulsioni,
     secondiGialli: p.doppieAmmonizioni,
     ammonizioniVersoSqualifica: p.ammonizioniVersoSqualifica,
+    prossimaSogliaSqualifica: p.prossimaSogliaSqualifica,
     diffidato: p.diffidato,
   }));
 }

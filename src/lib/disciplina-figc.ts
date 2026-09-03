@@ -10,13 +10,13 @@ import type { EventoPartita, Giocatore, Partita } from "@/lib/types";
 //
 // I default riproducono l'impianto dei campionati dilettantistici FIGC/LND:
 //
-//   1. CUMULO DI AMMONIZIONI — la squalifica di una giornata scatta al
-//      raggiungimento della quarta ammonizione e successivamente ogni quattro.
-//      Il conteggio non si azzera a fine ciclo: prosegue per tutta la stagione,
-//      quindi l'8ª, la 12ª... ammonizione fanno scattare una nuova giornata.
+//   1. CUMULO DI AMMONIZIONI — la squalifica di una giornata scatta a soglie
+//      che si stringono man mano: alla 4ª ammonizione, poi alla 7ª, poi alla
+//      9ª e da lì in avanti ad OGNI ammonizione successiva. Il conteggio non
+//      si azzera mai: prosegue per tutta la stagione.
 //   2. DIFFIDA — è diffidato chi si trova a una sola ammonizione dalla
-//      squalifica, cioè a quota 3, 7, 11... È uno stato calcolato, non un
-//      elenco da compilare a mano.
+//      squalifica, cioè a quota 3, 6, 8 e poi sempre dalla 9ª in poi. È uno
+//      stato calcolato, non un elenco da compilare a mano.
 //   3. DOPPIA AMMONIZIONE — l'espulsione per somma di ammonizioni nella stessa
 //      gara comporta una giornata di squalifica, e i due gialli che l'hanno
 //      determinata NON entrano nel computo del cumulo: sono assorbiti dal
@@ -32,8 +32,18 @@ import type { EventoPartita, Giocatore, Partita } from "@/lib/types";
 // ============================================================================
 
 export interface RegolamentoDisciplinare {
-  /** Ammonizioni che fanno scattare una giornata di squalifica (e ogni quante si ripete il ciclo). */
-  ammonizioniPerSqualifica: number;
+  /**
+   * Quote di ammonizioni che fanno scattare una giornata di squalifica, in
+   * ordine crescente. Nell'impianto FIGC gli intervalli si accorciano:
+   * 4ª, poi 7ª (tre dopo), poi 9ª (due dopo).
+   */
+  soglieAmmonizioni: number[];
+  /**
+   * Ogni quante ammonizioni si ripete la squalifica una volta superata
+   * l'ultima soglia: 1 = ad ogni ammonizione successiva (impianto FIGC),
+   * 0 = nessuna ulteriore squalifica per cumulo.
+   */
+  passoOltreLeSoglie: number;
   /** Giornate di squalifica per espulsione diretta (minimo edittale). */
   giornateEspulsioneDiretta: number;
   /** Giornate di squalifica per espulsione da doppia ammonizione. */
@@ -50,13 +60,51 @@ export interface RegolamentoDisciplinare {
 }
 
 export const REGOLAMENTO_FIGC_DILETTANTI: RegolamentoDisciplinare = {
-  ammonizioniPerSqualifica: 4,
+  soglieAmmonizioni: [4, 7, 9],
+  passoOltreLeSoglie: 1,
   giornateEspulsioneDiretta: 1,
   giornateDoppiaAmmonizione: 1,
   ammonizioniDoppiaNelCumulo: false,
   recidivaDallaEspulsione: 3,
   giornateAggravanteRecidiva: 1,
 };
+
+/** Le soglie ordinate e ripulite: l'ordine conta per tutti i calcoli che seguono. */
+function soglieOrdinate(regolamento: RegolamentoDisciplinare): number[] {
+  return [...new Set(regolamento.soglieAmmonizioni)].filter((n) => n > 0).sort((a, b) => a - b);
+}
+
+/**
+ * Vero se la n-esima ammonizione stagionale fa scattare la squalifica: o
+ * perché n è una delle soglie, o perché — superata l'ultima — si è nel passo
+ * che si ripete (nell'impianto FIGC ogni singola ammonizione).
+ */
+export function squalificaAllaAmmonizione(n: number, regolamento: RegolamentoDisciplinare = REGOLAMENTO_FIGC_DILETTANTI): boolean {
+  if (n <= 0) return false;
+  const soglie = soglieOrdinate(regolamento);
+  if (soglie.length === 0) return false;
+  if (soglie.includes(n)) return true;
+  const ultima = soglie[soglie.length - 1];
+  const passo = regolamento.passoOltreLeSoglie;
+  return passo > 0 && n > ultima && (n - ultima) % passo === 0;
+}
+
+/**
+ * Quante ammonizioni mancano, a chi ne ha già `n`, alla prossima squalifica
+ * per cumulo. Vale 1 per i diffidati. Zero significa che dopo l'ultima soglia
+ * il regolamento non prevede altre squalifiche per somma di ammonizioni.
+ */
+export function ammonizioniAllaSqualifica(n: number, regolamento: RegolamentoDisciplinare = REGOLAMENTO_FIGC_DILETTANTI): number {
+  const soglie = soglieOrdinate(regolamento);
+  if (soglie.length === 0) return 0;
+  const prossima = soglie.find((s) => s > n);
+  if (prossima !== undefined) return prossima - n;
+  const passo = regolamento.passoOltreLeSoglie;
+  if (passo <= 0) return 0;
+  const ultima = soglie[soglie.length - 1];
+  const avanzo = (n - ultima) % passo;
+  return passo - avanzo;
+}
 
 export type MotivoAutomatico = "somma_ammonizioni" | "doppia_ammonizione" | "espulsione";
 
@@ -86,6 +134,8 @@ export interface PosizioneDisciplinare {
   doppieAmmonizioni: number;
   /** Quante ammonizioni mancano alla prossima squalifica per cumulo. */
   ammonizioniVersoSqualifica: number;
+  /** A quale ammonizione stagionale scatterà la prossima squalifica (4ª, 7ª, 9ª, 10ª...). */
+  prossimaSogliaSqualifica: number;
   diffidato: boolean;
   /** Giornate totali di squalifica maturate automaticamente in stagione. */
   giornateSqualificaAutomatiche: number;
@@ -121,7 +171,6 @@ export function calcolaPosizioniDisciplinari(
     .filter((p) => p.stato === "conclusa")
     .sort((a, b) => a.giornata - b.giornata || new Date(a.dataOra).getTime() - new Date(b.dataOra).getTime());
 
-  const soglia = Math.max(1, regolamento.ammonizioniPerSqualifica);
   const posizioni = new Map<string, PosizioneDisciplinare>();
 
   const mappaGiocatori = new Map(giocatori.map((g) => [g.id, g]));
@@ -141,7 +190,8 @@ export function calcolaPosizioniDisciplinari(
       espulsioni: 0,
       espulsioniDirette: 0,
       doppieAmmonizioni: 0,
-      ammonizioniVersoSqualifica: soglia,
+      ammonizioniVersoSqualifica: ammonizioniAllaSqualifica(0, regolamento),
+      prossimaSogliaSqualifica: ammonizioniAllaSqualifica(0, regolamento),
       diffidato: false,
       giornateSqualificaAutomatiche: 0,
       squalifiche: [],
@@ -172,10 +222,10 @@ export function calcolaPosizioniDisciplinari(
       // 3. I gialli che hanno prodotto l'espulsione non entrano nel cumulo.
       const gialliNelCumulo = doppia && !regolamento.ammonizioniDoppiaNelCumulo ? 0 : gialli + (doppia ? 1 : 0);
 
-      // 1. Cumulo: una giornata ogni volta che si tocca un multiplo della soglia.
+      // 1. Cumulo: una giornata ogni volta che si tocca una delle soglie.
       for (let i = 0; i < gialliNelCumulo; i++) {
         pos.ammonizioni += 1;
-        if (pos.ammonizioni % soglia === 0) {
+        if (squalificaAllaAmmonizione(pos.ammonizioni, regolamento)) {
           pos.squalifiche.push({
             giocatoreId,
             squadraId,
@@ -233,9 +283,9 @@ export function calcolaPosizioniDisciplinari(
 
   // 2. Diffida: stato finale, a una sola ammonizione dalla prossima squalifica.
   posizioni.forEach((pos) => {
-    const nelCiclo = pos.ammonizioni % soglia;
-    pos.ammonizioniVersoSqualifica = soglia - nelCiclo;
-    pos.diffidato = pos.ammonizioni > 0 && nelCiclo === soglia - 1;
+    pos.ammonizioniVersoSqualifica = ammonizioniAllaSqualifica(pos.ammonizioni, regolamento);
+    pos.prossimaSogliaSqualifica = pos.ammonizioni + pos.ammonizioniVersoSqualifica;
+    pos.diffidato = pos.ammonizioni > 0 && pos.ammonizioniVersoSqualifica === 1;
   });
 
   return [...posizioni.values()].sort(

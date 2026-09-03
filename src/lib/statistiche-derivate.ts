@@ -71,9 +71,10 @@ export function calcolaStatisticheDerivate(partite: Partita[], giocatori: Giocat
     .forEach((partita) => {
       const presenti = new Set<string>();
 
-      // Presenza: chi compare in distinta, o in mancanza di distinta chi ha
-      // almeno un evento a referto. Il calendario importato da CSV non porta
-      // formazioni, quindi senza questo fallback nessuno risulterebbe presente.
+      // Presenza: chi compare nella distinta compilata prima della gara, più —
+      // anche senza distinta — chiunque abbia almeno un evento a referto. Il
+      // calendario importato da CSV non porta formazioni, quindi senza questo
+      // secondo criterio le gare vecchie non darebbero nessuna presenza.
       [...(partita.formazioneCasa ?? []), ...(partita.formazioneTrasferta ?? [])].forEach((v) =>
         presenti.add(v.giocatoreId)
       );

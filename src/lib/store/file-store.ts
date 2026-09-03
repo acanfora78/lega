@@ -10,11 +10,13 @@ import type {
   Competizione,
   EventoPartita,
   FaseCompetizione,
+  FormazioneVoce,
   Giocatore,
   Notifica,
   Partita,
   PremioSettimanale,
   RigaClassifica,
+  Ruolo,
   Sponsor,
   Squadra,
   Squalifica,
@@ -544,6 +546,51 @@ export async function impostaVotiPartita(id: string, voti: VotoPartita[]) {
   // Un solo voto per giocatore: l'ultimo inviato vince.
   const perGiocatore = new Map(validi.map((v) => [v.giocatoreId, v]));
   partita.voti = [...perGiocatore.values()];
+
+  await persist(data);
+  return partita;
+}
+
+/**
+ * Riga di distinta in arrivo dal pannello: del giocatore basta l'id, numero e
+ * ruolo si completano dalla scheda del tesserato se non vengono indicati.
+ */
+export type VoceDistinta = { giocatoreId: string; titolare?: boolean; numero?: number; ruolo?: Ruolo };
+
+/**
+ * Distinta di gara di una delle due squadre: l'elenco di chi è effettivamente
+ * presente, compilato prima del fischio d'inizio. È la base delle presenze in
+ * classifica individuale e restringe al solo gruppo convocato gli elenchi del
+ * tabellino, che altrimenti proporrebbero l'intera rosa.
+ *
+ * Si accettano solo tesserati della squadra indicata, una volta sola ciascuno:
+ * una distinta con un giocatore dell'altra squadra falserebbe presenze e
+ * cartellini senza che nessuno se ne accorga.
+ */
+export async function impostaDistintaPartita(id: string, squadraId: string, voci: VoceDistinta[]) {
+  const data = await load();
+  const partita = data.partite.find((p) => p.id === id);
+  if (!partita) return undefined;
+  if (squadraId !== partita.squadraCasaId && squadraId !== partita.squadraTrasfertaId) {
+    throw new Error("La squadra indicata non gioca questa partita.");
+  }
+
+  const rosa = new Map(data.giocatori.filter((g) => g.squadraId === squadraId).map((g) => [g.id, g]));
+  const perGiocatore = new Map<string, FormazioneVoce>();
+  voci.forEach((v) => {
+    const giocatore = rosa.get(v.giocatoreId);
+    if (!giocatore) return;
+    perGiocatore.set(giocatore.id, {
+      giocatoreId: giocatore.id,
+      titolare: Boolean(v.titolare),
+      numero: typeof v.numero === "number" && Number.isFinite(v.numero) && v.numero > 0 ? v.numero : giocatore.numeroMaglia,
+      ruolo: v.ruolo ?? giocatore.ruolo,
+    });
+  });
+
+  const distinta = [...perGiocatore.values()];
+  if (squadraId === partita.squadraCasaId) partita.formazioneCasa = distinta;
+  else partita.formazioneTrasferta = distinta;
 
   await persist(data);
   return partita;

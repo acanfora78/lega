@@ -4,6 +4,7 @@ import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminMatchControl } from "@/components/admin/admin-match-control";
 import { getPartite, getPartitaById, getSquadraById, getGiocatoriDellaSquadra } from "@/lib/data";
+import { getSqualificheRisolte } from "@/lib/data/disciplina";
 
 export async function generateStaticParams() {
   return (await getPartite()).map((p) => ({ id: p.id }));
@@ -25,10 +26,24 @@ export default async function AdminPartitaDetailPage({ params }: { params: Promi
 
   const casa = (await getSquadraById(partita.squadraCasaId))!;
   const trasferta = (await getSquadraById(partita.squadraTrasfertaId))!;
-  const [rosterCasa, rosterTrasferta] = await Promise.all([
+  const [rosterCasa, rosterTrasferta, squalifiche] = await Promise.all([
     getGiocatoriDellaSquadra(casa.id),
     getGiocatoriDellaSquadra(trasferta.id),
+    getSqualificheRisolte(partita.giornata),
   ]);
+
+  // Chi sta scontando una squalifica proprio in questa giornata: la distinta lo
+  // segnala, così non finisce in campo per una svista e non si arriva al
+  // reclamo a partita giocata. Le squalifiche sono quelle del campionato, quindi
+  // la segnalazione vale solo per le sue gare: su una coppa direbbe il falso.
+  const indisponibili: Record<string, string> = {};
+  squalifiche
+    .filter((s) => !partita.competizioneId && s.giornataDa <= partita.giornata && partita.giornata <= s.giornataA)
+    .forEach((s) => {
+      indisponibili[s.giocatoreId] = `Squalificato (${
+        s.giornataDa === s.giornataA ? `${s.giornataDa}ª` : `${s.giornataDa}ª–${s.giornataA}ª`
+      })`;
+    });
 
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
@@ -39,7 +54,14 @@ export default async function AdminPartitaDetailPage({ params }: { params: Promi
         </h1>
       </div>
       <AdminShell>
-        <AdminMatchControl partita={partita} casa={casa} trasferta={trasferta} rosterCasa={rosterCasa} rosterTrasferta={rosterTrasferta} />
+        <AdminMatchControl
+          partita={partita}
+          casa={casa}
+          trasferta={trasferta}
+          rosterCasa={rosterCasa}
+          rosterTrasferta={rosterTrasferta}
+          indisponibili={indisponibili}
+        />
       </AdminShell>
     </Container>
   );

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Minus, Plus, Trophy, Loader2 } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
+import { AdminDistinta } from "@/components/admin/admin-distinta";
 import { AdminMatchVotes } from "@/components/admin/admin-match-votes";
 import { MatchTimeline } from "@/components/match/timeline";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import type { EventoPartita, Giocatore, Partita, Squadra, StatoPartita, TipoEvento } from "@/lib/types";
+import type { EventoPartita, FormazioneVoce, Giocatore, Partita, Squadra, StatoPartita, TipoEvento } from "@/lib/types";
 
 const STATI: StatoPartita[] = ["programmata", "live", "intervallo", "conclusa", "rinviata", "sospesa"];
 // "Seconda ammonizione" è una voce a sé e non un secondo giallo qualsiasi:
@@ -30,18 +31,33 @@ const TIPI_EVENTO: { value: TipoEvento; label: string }[] = [
   { value: "sostituzione", label: "Sostituzione" },
 ];
 
+/**
+ * I giocatori proposti nel tabellino: quelli in distinta, o l'intera rosa
+ * finché la distinta non è stata compilata — le partite importate da
+ * calendario non ne hanno una, e un elenco vuoto impedirebbe di inserire
+ * marcatori e cartellini.
+ */
+function convocati(roster: Giocatore[], distinta: FormazioneVoce[]): Giocatore[] {
+  if (distinta.length === 0) return roster;
+  const inDistinta = new Set(distinta.map((v) => v.giocatoreId));
+  return roster.filter((g) => inDistinta.has(g.id));
+}
+
 export function AdminMatchControl({
   partita,
   casa,
   trasferta,
   rosterCasa,
   rosterTrasferta,
+  indisponibili = {},
 }: {
   partita: Partita;
   casa: Squadra;
   trasferta: Squadra;
   rosterCasa: Giocatore[];
   rosterTrasferta: Giocatore[];
+  /** giocatoreId → squalifica in corso su questa giornata, segnalata in distinta. */
+  indisponibili?: Record<string, string>;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -51,12 +67,33 @@ export function AdminMatchControl({
   const [eventi, setEventi] = useState<EventoPartita[]>(partita.eventi);
   const [mvpId, setMvpId] = useState(partita.mvpGiocatoreId ?? "");
 
+  // La distinta vive qui e non dentro il suo pannello: appena si spunta un
+  // giocatore, gli elenchi di cronaca, MVP e voti si restringono di
+  // conseguenza, senza aspettare il salvataggio e il ricaricamento.
+  const [distintaCasa, setDistintaCasa] = useState<FormazioneVoce[]>(partita.formazioneCasa ?? []);
+  const [distintaTrasferta, setDistintaTrasferta] = useState<FormazioneVoce[]>(partita.formazioneTrasferta ?? []);
+
   const [squadraForm, setSquadraForm] = useState(casa.id);
   const [tipoForm, setTipoForm] = useState<TipoEvento>("goal");
   const [giocatoreForm, setGiocatoreForm] = useState("");
   const [minutoForm, setMinutoForm] = useState(1);
 
-  const rosterAttivo = squadraForm === casa.id ? rosterCasa : rosterTrasferta;
+  const convocatiCasa = useMemo(() => convocati(rosterCasa, distintaCasa), [rosterCasa, distintaCasa]);
+  const convocatiTrasferta = useMemo(
+    () => convocati(rosterTrasferta, distintaTrasferta),
+    [rosterTrasferta, distintaTrasferta]
+  );
+
+  const rosterAttivo = squadraForm === casa.id ? convocatiCasa : convocatiTrasferta;
+
+  function cambiaDistinta(squadraId: string, voci: FormazioneVoce[]) {
+    if (squadraId === casa.id) setDistintaCasa(voci);
+    else setDistintaTrasferta(voci);
+    // Chi esce dalla distinta non può restare selezionato nel form evento.
+    if (squadraId === squadraForm && giocatoreForm && voci.length > 0 && !voci.some((v) => v.giocatoreId === giocatoreForm)) {
+      setGiocatoreForm("");
+    }
+  }
 
   async function patch(body: Record<string, unknown>) {
     const res = await fetch(`/api/admin/partite/${partita.id}`, {
@@ -215,6 +252,18 @@ export function AdminMatchControl({
         </CardContent>
       </Card>
 
+      <AdminDistinta
+        partitaId={partita.id}
+        casa={casa}
+        trasferta={trasferta}
+        rosterCasa={rosterCasa}
+        rosterTrasferta={rosterTrasferta}
+        distintaCasa={distintaCasa}
+        distintaTrasferta={distintaTrasferta}
+        onChange={cambiaDistinta}
+        indisponibili={indisponibili}
+      />
+
       <Card>
         <CardContent className="flex flex-col gap-4 p-5">
           <p className="font-display text-base font-bold">Aggiungi evento alla cronaca</p>
@@ -293,7 +342,7 @@ export function AdminMatchControl({
               <SelectValue placeholder="Seleziona MVP" />
             </SelectTrigger>
             <SelectContent>
-              {[...rosterCasa, ...rosterTrasferta].map((g) => (
+              {[...convocatiCasa, ...convocatiTrasferta].map((g) => (
                 <SelectItem key={g.id} value={g.id}>
                   {g.nome} {g.cognome}
                 </SelectItem>
@@ -307,8 +356,8 @@ export function AdminMatchControl({
         partita={partita}
         casa={casa}
         trasferta={trasferta}
-        rosterCasa={rosterCasa}
-        rosterTrasferta={rosterTrasferta}
+        rosterCasa={convocatiCasa}
+        rosterTrasferta={convocatiTrasferta}
       />
 
       <div>

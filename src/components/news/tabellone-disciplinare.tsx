@@ -5,7 +5,7 @@ import { TeamCrest } from "@/components/brand/team-crest";
 import { UnderQuarantaStar } from "@/components/player/under-quaranta-star";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AMMONIZIONI_PER_SQUALIFICA, type ConteggioRisolto, type SqualificaRisolta } from "@/lib/data/disciplina";
+import { type ConteggioRisolto, type SqualificaRisolta } from "@/lib/data/disciplina";
 import type { MotivoSqualifica } from "@/lib/types";
 
 const ETICHETTE_MOTIVO: Record<MotivoSqualifica, string> = {
@@ -122,8 +122,7 @@ export function ConteggiCartellini({ conteggi }: { conteggi: ConteggioRisolto[] 
                     </Badge>
                   ) : (
                     <span className="text-[11px] text-muted-foreground">
-                      {c.ammonizioniVersoSqualifica} al{" "}
-                      {AMMONIZIONI_PER_SQUALIFICA}° giallo
+                      {c.ammonizioniVersoSqualifica} al {c.prossimaSogliaSqualifica}° giallo
                     </span>
                   )}
                 </td>

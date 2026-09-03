@@ -292,8 +292,10 @@ export interface ConteggioDisciplinare {
   ammonizioni: number;
   espulsioni: number;
   secondiGialli: number;
-  /** Ammonizioni residue prima di scattare alla diffida successiva. */
+  /** Ammonizioni residue prima della prossima squalifica per cumulo. */
   ammonizioniVersoSqualifica: number;
+  /** Ammonizione stagionale a cui scatterà quella squalifica (4ª, 7ª, 9ª, poi ogni). */
+  prossimaSogliaSqualifica: number;
   diffidato: boolean;
 }
 

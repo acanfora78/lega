@@ -32,7 +32,10 @@ export default async function PartitaDetailPage({ params }: { params: Promise<{ 
   const casa = (await getSquadraById(partita.squadraCasaId))!;
   const trasferta = (await getSquadraById(partita.squadraTrasfertaId))!;
   const isLive = partita.stato === "live" || partita.stato === "intervallo";
-  const haFormazioni = Boolean(partita.formazioneCasa && partita.formazioneTrasferta);
+  // Basta una distinta delle due: la seconda squadra spesso consegna la
+  // propria all'ultimo, e nascondere anche quella già depositata sarebbe
+  // peggio che mostrarla da sola.
+  const haFormazioni = Boolean(partita.formazioneCasa?.length || partita.formazioneTrasferta?.length);
   const [giocatoriCasa, giocatoriTrasferta] = await Promise.all([
     getGiocatoriDellaSquadra(casa.id),
     getGiocatoriDellaSquadra(trasferta.id),

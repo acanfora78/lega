@@ -32,8 +32,12 @@ async function VoceRiga({ voce }: { voce: FormazioneVoce }) {
 }
 
 export function TeamLineup({ squadra, formazione }: { squadra: Squadra; formazione?: FormazioneVoce[] }) {
-  if (!formazione) {
-    return <p className="text-sm text-muted-foreground">Formazione non ancora disponibile.</p>;
+  if (!formazione?.length) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Distinta di {squadra.nomeBreve} non ancora disponibile.
+      </p>
+    );
   }
   const titolari = formazione.filter((f) => f.titolare);
   const panchina = formazione.filter((f) => !f.titolare);
@@ -46,12 +50,16 @@ export function TeamLineup({ squadra, formazione }: { squadra: Squadra; formazio
           <VoceRiga key={v.giocatoreId} voce={v} />
         ))}
       </div>
-      <p className="mb-1 mt-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Panchina</p>
-      <div className="divide-y divide-border/60">
-        {panchina.map((v) => (
-          <VoceRiga key={v.giocatoreId} voce={v} />
-        ))}
-      </div>
+      {panchina.length > 0 && (
+        <>
+          <p className="mb-1 mt-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Panchina</p>
+          <div className="divide-y divide-border/60">
+            {panchina.map((v) => (
+              <VoceRiga key={v.giocatoreId} voce={v} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
