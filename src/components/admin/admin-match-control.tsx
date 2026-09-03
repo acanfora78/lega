@@ -5,15 +5,15 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Minus, Plus, Trophy, Loader2 } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
-import { AdminDistinta } from "@/components/admin/admin-distinta";
-import { AdminMatchVotes } from "@/components/admin/admin-match-votes";
+import { AdminTabellino } from "@/components/admin/admin-tabellino";
 import { MatchTimeline } from "@/components/match/timeline";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import type { EventoPartita, FormazioneVoce, Giocatore, Partita, Squadra, StatoPartita, TipoEvento } from "@/lib/types";
+import { leggiTabellino, type RigaTabellino } from "@/lib/tabellino";
+import type { EventoPartita, Giocatore, Partita, Squadra, StatoPartita, TipoEvento } from "@/lib/types";
 
 const STATI: StatoPartita[] = ["programmata", "live", "intervallo", "conclusa", "rinviata", "sospesa"];
 // "Seconda ammonizione" è una voce a sé e non un secondo giallo qualsiasi:
@@ -32,15 +32,15 @@ const TIPI_EVENTO: { value: TipoEvento; label: string }[] = [
 ];
 
 /**
- * I giocatori proposti nel tabellino: quelli in distinta, o l'intera rosa
- * finché la distinta non è stata compilata — le partite importate da
- * calendario non ne hanno una, e un elenco vuoto impedirebbe di inserire
- * marcatori e cartellini.
+ * I giocatori proposti nella cronaca e nell'MVP: quelli segnati presenti nel
+ * tabellino, o l'intera rosa finché non ne è stato segnato nessuno — le
+ * partite importate da calendario non hanno distinta, e un elenco vuoto
+ * impedirebbe di inserire marcatori e cartellini.
  */
-function convocati(roster: Giocatore[], distinta: FormazioneVoce[]): Giocatore[] {
-  if (distinta.length === 0) return roster;
-  const inDistinta = new Set(distinta.map((v) => v.giocatoreId));
-  return roster.filter((g) => inDistinta.has(g.id));
+function convocati(roster: Giocatore[], righe: RigaTabellino[]): Giocatore[] {
+  const presenti = new Set(righe.filter((r) => r.presente).map((r) => r.giocatoreId));
+  if (presenti.size === 0) return roster;
+  return roster.filter((g) => presenti.has(g.id));
 }
 
 export function AdminMatchControl({
@@ -67,30 +67,31 @@ export function AdminMatchControl({
   const [eventi, setEventi] = useState<EventoPartita[]>(partita.eventi);
   const [mvpId, setMvpId] = useState(partita.mvpGiocatoreId ?? "");
 
-  // La distinta vive qui e non dentro il suo pannello: appena si spunta un
-  // giocatore, gli elenchi di cronaca, MVP e voti si restringono di
-  // conseguenza, senza aspettare il salvataggio e il ricaricamento.
-  const [distintaCasa, setDistintaCasa] = useState<FormazioneVoce[]>(partita.formazioneCasa ?? []);
-  const [distintaTrasferta, setDistintaTrasferta] = useState<FormazioneVoce[]>(partita.formazioneTrasferta ?? []);
+  // Il tabellino vive qui e non dentro il suo pannello: appena si spunta un
+  // presente, gli elenchi di cronaca e MVP si restringono di conseguenza,
+  // senza aspettare il salvataggio e il ricaricamento.
+  const [righeCasa, setRigheCasa] = useState<RigaTabellino[]>(() => leggiTabellino(partita, rosterCasa));
+  const [righeTrasferta, setRigheTrasferta] = useState<RigaTabellino[]>(() => leggiTabellino(partita, rosterTrasferta));
 
   const [squadraForm, setSquadraForm] = useState(casa.id);
   const [tipoForm, setTipoForm] = useState<TipoEvento>("goal");
   const [giocatoreForm, setGiocatoreForm] = useState("");
   const [minutoForm, setMinutoForm] = useState(1);
 
-  const convocatiCasa = useMemo(() => convocati(rosterCasa, distintaCasa), [rosterCasa, distintaCasa]);
+  const convocatiCasa = useMemo(() => convocati(rosterCasa, righeCasa), [rosterCasa, righeCasa]);
   const convocatiTrasferta = useMemo(
-    () => convocati(rosterTrasferta, distintaTrasferta),
-    [rosterTrasferta, distintaTrasferta]
+    () => convocati(rosterTrasferta, righeTrasferta),
+    [rosterTrasferta, righeTrasferta]
   );
 
   const rosterAttivo = squadraForm === casa.id ? convocatiCasa : convocatiTrasferta;
 
-  function cambiaDistinta(squadraId: string, voci: FormazioneVoce[]) {
-    if (squadraId === casa.id) setDistintaCasa(voci);
-    else setDistintaTrasferta(voci);
+  function cambiaTabellino(squadraId: string, righe: RigaTabellino[]) {
+    if (squadraId === casa.id) setRigheCasa(righe);
+    else setRigheTrasferta(righe);
     // Chi esce dalla distinta non può restare selezionato nel form evento.
-    if (squadraId === squadraForm && giocatoreForm && voci.length > 0 && !voci.some((v) => v.giocatoreId === giocatoreForm)) {
+    const presenti = righe.filter((r) => r.presente);
+    if (squadraId === squadraForm && giocatoreForm && presenti.length > 0 && !presenti.some((r) => r.giocatoreId === giocatoreForm)) {
       setGiocatoreForm("");
     }
   }
@@ -252,15 +253,15 @@ export function AdminMatchControl({
         </CardContent>
       </Card>
 
-      <AdminDistinta
+      <AdminTabellino
         partitaId={partita.id}
         casa={casa}
         trasferta={trasferta}
         rosterCasa={rosterCasa}
         rosterTrasferta={rosterTrasferta}
-        distintaCasa={distintaCasa}
-        distintaTrasferta={distintaTrasferta}
-        onChange={cambiaDistinta}
+        righeCasa={righeCasa}
+        righeTrasferta={righeTrasferta}
+        onChange={cambiaTabellino}
         indisponibili={indisponibili}
       />
 
@@ -351,14 +352,6 @@ export function AdminMatchControl({
           </Select>
         </CardContent>
       </Card>
-
-      <AdminMatchVotes
-        partita={partita}
-        casa={casa}
-        trasferta={trasferta}
-        rosterCasa={convocatiCasa}
-        rosterTrasferta={convocatiTrasferta}
-      />
 
       <div>
         <p className="mb-3 font-display text-base font-bold">Cronaca</p>

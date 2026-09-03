@@ -4,19 +4,18 @@ import { randomUUID } from "node:crypto";
 import { cache } from "react";
 import { createClient as createServerSupabaseClient } from "@/lib/supabase/server";
 import { createReadOnlyClient } from "@/lib/supabase/read-only";
+import { applicaTabellino, type RigaTabellino } from "@/lib/tabellino";
 import type {
   AlbumMedia,
   Articolo,
   Competizione,
   EventoPartita,
   FaseCompetizione,
-  FormazioneVoce,
   Giocatore,
   Notifica,
   Partita,
   PremioSettimanale,
   RigaClassifica,
-  Ruolo,
   Sponsor,
   Squadra,
   Squalifica,
@@ -552,22 +551,17 @@ export async function impostaVotiPartita(id: string, voti: VotoPartita[]) {
 }
 
 /**
- * Riga di distinta in arrivo dal pannello: del giocatore basta l'id, numero e
- * ruolo si completano dalla scheda del tesserato se non vengono indicati.
- */
-export type VoceDistinta = { giocatoreId: string; titolare?: boolean; numero?: number; ruolo?: Ruolo };
-
-/**
- * Distinta di gara di una delle due squadre: l'elenco di chi è effettivamente
- * presente, compilato prima del fischio d'inizio. È la base delle presenze in
- * classifica individuale e restringe al solo gruppo convocato gli elenchi del
- * tabellino, che altrimenti proporrebbero l'intera rosa.
+ * Salva il tabellino di una squadra: presenze, gol, assist, cartellini e voti
+ * in un colpo solo. La riconciliazione vera sta in src/lib/tabellino.ts, che
+ * riscrive gli eventi della sola squadra indicata lasciando intatti quelli
+ * dell'avversaria e quelli che il tabellino non governa.
  *
- * Si accettano solo tesserati della squadra indicata, una volta sola ciascuno:
- * una distinta con un giocatore dell'altra squadra falserebbe presenze e
- * cartellini senza che nessuno se ne accorga.
+ * Il risultato si muove della differenza, non del totale: come per
+ * l'inserimento del singolo episodio, un gol aggiunto vale una rete in più. Un
+ * punteggio messo a mano per reti senza marcatore indicato resta quindi
+ * valido.
  */
-export async function impostaDistintaPartita(id: string, squadraId: string, voci: VoceDistinta[]) {
+export async function impostaTabellinoPartita(id: string, squadraId: string, righe: RigaTabellino[]) {
   const data = await load();
   const partita = data.partite.find((p) => p.id === id);
   if (!partita) return undefined;
@@ -575,24 +569,27 @@ export async function impostaDistintaPartita(id: string, squadraId: string, voci
     throw new Error("La squadra indicata non gioca questa partita.");
   }
 
-  const rosa = new Map(data.giocatori.filter((g) => g.squadraId === squadraId).map((g) => [g.id, g]));
-  const perGiocatore = new Map<string, FormazioneVoce>();
-  voci.forEach((v) => {
-    const giocatore = rosa.get(v.giocatoreId);
-    if (!giocatore) return;
-    perGiocatore.set(giocatore.id, {
-      giocatoreId: giocatore.id,
-      titolare: Boolean(v.titolare),
-      numero: typeof v.numero === "number" && Number.isFinite(v.numero) && v.numero > 0 ? v.numero : giocatore.numeroMaglia,
-      ruolo: v.ruolo ?? giocatore.ruolo,
-    });
-  });
+  const roster = data.giocatori.filter((g) => g.squadraId === squadraId);
+  // Un voto fuori scala equivale a "non assegnato": non deve pesare sulle medie.
+  const pulite = righe.map((r) => ({
+    ...r,
+    voto:
+      typeof r.voto === "number" && Number.isFinite(r.voto) && r.voto >= VOTO_MINIMO && r.voto <= VOTO_MASSIMO
+        ? r.voto
+        : null,
+  }));
 
-  const distinta = [...perGiocatore.values()];
-  if (squadraId === partita.squadraCasaId) partita.formazioneCasa = distinta;
-  else partita.formazioneTrasferta = distinta;
+  const esito = applicaTabellino(partita, squadraId, roster, pulite, () => `evento-${randomUUID()}`);
+
+  partita.eventi = esito.eventi;
+  partita.voti = esito.voti;
+  if (squadraId === partita.squadraCasaId) partita.formazioneCasa = esito.distinta;
+  else partita.formazioneTrasferta = esito.distinta;
+  partita.golCasa = Math.max(0, partita.golCasa + esito.deltaGolCasa);
+  partita.golTrasferta = Math.max(0, partita.golTrasferta + esito.deltaGolTrasferta);
 
   await persist(data);
+  if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
   return partita;
 }
 

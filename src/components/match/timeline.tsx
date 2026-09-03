@@ -86,8 +86,15 @@ export function MatchTimeline({
             </span>
             <div className="flex items-start gap-3">
               <span className="font-score shrink-0 rounded-md bg-white/[0.06] px-1.5 py-0.5 text-xs font-bold tabular-nums">
-                {e.minuto}
-                {e.minutoRecupero ? `+${e.minutoRecupero}` : ""}&apos;
+                {/* Minuto 0 = episodio arrivato dal tabellino, dove il minuto non si chiede. */}
+                {e.minuto > 0 ? (
+                  <>
+                    {e.minuto}
+                    {e.minutoRecupero ? `+${e.minutoRecupero}` : ""}&apos;
+                  </>
+                ) : (
+                  "—"
+                )}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
