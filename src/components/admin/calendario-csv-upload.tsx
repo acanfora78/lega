@@ -65,7 +65,11 @@ export function CalendarioCsvUpload({
         if (Array.isArray(body.righe)) setErrori(body.righe);
         throw new Error(body.error ?? "Errore");
       }
-      toast.success(`${body.creati} partite importate`);
+      const parti = [
+        body.creati > 0 ? `${body.creati} partite aggiunte` : "",
+        body.aggiornati > 0 ? `${body.aggiornati} riallineate al file` : "",
+      ].filter(Boolean);
+      toast.success(parti.length > 0 ? parti.join(", ") : "Calendario già allineato al file");
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
       startTransition(() => router.refresh());
@@ -86,6 +90,11 @@ export function CalendarioCsvUpload({
         <p className="-mt-2 text-xs text-muted-foreground">
           Colonne attese: <code className="font-mono">{COLONNE_CSV}</code>. Le squadre vanno scritte con nome
           completo o nome breve, esattamente come registrate. arbitro, campo{fasi ? " e fase" : ""} sono facoltativi.
+          Gli orari sono quelli del file, letti come ora italiana.
+        </p>
+        <p className="-mt-1 text-xs text-muted-foreground">
+          Ricaricare lo stesso CSV non crea doppioni: le gare già presenti (stessa giornata, stesse squadre) vengono
+          riallineate a data e ora del file, mantenendo risultato, cronaca e voti già inseriti.
         </p>
 
         <div className={`grid grid-cols-1 gap-3 ${fasi ? "sm:grid-cols-3" : ""}`}>

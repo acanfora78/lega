@@ -41,9 +41,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   try {
-    const create = await importaCalendarioCompetizione(id, faseId, esito.righe);
+    const importate = await importaCalendarioCompetizione(id, faseId, esito.righe);
     revalidateCompetizioni(competizione.slug);
-    return NextResponse.json({ creati: create?.length ?? 0 }, { status: 201 });
+    return NextResponse.json(
+      { creati: importate?.creati ?? 0, aggiornati: importate?.aggiornati ?? 0 },
+      { status: 201 }
+    );
   } catch (err) {
     return erroreApi(err, "Impossibile importare il calendario.");
   }

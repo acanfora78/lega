@@ -249,61 +249,33 @@ function isFilesystemReadOnly(err: unknown): boolean {
 // UTC+2) finiva salvata 2 ore avanti. Le partite già inserite prima del fix
 // vanno corrette una volta sola; quelle nuove nascono già corrette perché
 // scritte con `parseDataOraRoma`.
-const MIGRAZIONE_ORARI_ROMA = "2026-08-orari-partite-fuso-roma";
-
-// Il -2h della migrazione precedente era giusto per le gare in ora legale, ma
-// ha sovracorretto di un'ora quelle che si giocano in ora solare: dal cambio
-// d'ora di fine ottobre lo scarto originale era di un'ora sola, non di due.
-// Nel calendario della Lega la frattura cade fra la 7ª e l'8ª giornata: le
-// prime sette restano come sono, dall'8ª alla 27ª va restituita l'ora tolta
-// in eccesso.
-const MIGRAZIONE_ORA_SOLARE = "2026-09-orari-giornate-8-27-piu-un-ora";
-const GIORNATA_DA_ORA_SOLARE = 8;
-const GIORNATA_A_ORA_SOLARE = 27;
-
-/** Applica le migrazioni non ancora segnate su `data`, mutandolo. Ritorna true se qualcosa è cambiato (va persistito). */
-function applicaMigrazioni(data: LegaData): boolean {
-  let modificato = false;
-
-  if (!data.migrazioni.includes(MIGRAZIONE_ORARI_ROMA)) {
-    data.partite.forEach((p) => {
-      p.dataOra = new Date(new Date(p.dataOra).getTime() - 2 * 60 * 60 * 1000).toISOString();
-    });
-    data.migrazioni.push(MIGRAZIONE_ORARI_ROMA);
-    modificato = true;
-  }
-
-  if (!data.migrazioni.includes(MIGRAZIONE_ORA_SOLARE)) {
-    data.partite
-      .filter((p) => p.giornata >= GIORNATA_DA_ORA_SOLARE && p.giornata <= GIORNATA_A_ORA_SOLARE)
-      .forEach((p) => {
-        p.dataOra = new Date(new Date(p.dataOra).getTime() + 60 * 60 * 1000).toISOString();
-      });
-    data.migrazioni.push(MIGRAZIONE_ORA_SOLARE);
-    modificato = true;
-  }
-
-  return modificato;
-}
+// ---------------------------------------------------------------------------
+// NESSUNO SPOSTAMENTO D'ORARIO IN LETTURA
+// ---------------------------------------------------------------------------
+// Qui prima vivevano due migrazioni che spostavano gli orari delle partite di
+// una quantità fissa (-2h a tutte, poi +1h alle giornate 8-27) per rimediare a
+// come venivano interpretati all'import. Sono state rimosse, per due motivi:
+//
+//   1. Erano una stima. Lo scarto reale dipende dalla data della singola gara
+//      (ora legale o solare), non dal numero di giornata: qualunque intervallo
+//      di giornate sbaglia le partite a cavallo del cambio d'ora.
+//   2. Erano applicate ad ogni lettura finché non riuscivano a salvarsi, e su
+//      una richiesta pubblica la RLS rifiuta la scrittura: le pagine per il
+//      pubblico continuavano quindi a mostrare orari spostati, comprese le
+//      partite appena importate, che erano già corrette.
+//
+// L'orario ora ha una sola fonte: il CSV. Viene letto come ora italiana
+// (src/lib/timezone.ts) e mostrato sempre nel fuso di Roma, quindi quello che
+// si legge nel file è quello che si vede nel calendario. Per correggere gli
+// orari di un calendario già caricato si ricarica lo stesso CSV: l'import
+// riallinea le gare esistenti invece di duplicarle (vedi importaCalendario*).
+// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // SELEZIONE BACKEND
 // ---------------------------------------------------------------------------
 async function load(): Promise<LegaData> {
-  const data = isSupabaseConfigured ? await loadFromSupabase() : loadFromFile();
-  if (applicaMigrazioni(data)) {
-    // La correzione va già bene per la richiesta corrente (agisce sull'oggetto
-    // in memoria prima del return); il salvataggio è solo per renderla
-    // definitiva. Se la richiesta è pubblica e non autenticata, la RLS
-    // "scrittura_organizzatore" la rifiuta: si ritenta al prossimo load(),
-    // non deve mai far fallire una lettura pubblica.
-    try {
-      await persist(data);
-    } catch (err) {
-      console.warn("[store] Migrazione orari non ancora persistita (richiede una richiesta autenticata da organizzatore).", err);
-    }
-  }
-  return data;
+  return isSupabaseConfigured ? loadFromSupabase() : loadFromFile();
 }
 
 async function persist(data: LegaData) {
@@ -675,10 +647,16 @@ export async function eliminaFaseCompetizione(competizioneId: string, faseId: st
 }
 
 /**
- * Importa in blocco il calendario di una competizione (o di una sua fase) da
- * righe già validate e risolte sulle squadre — l'organizzatore fornisce il
- * calendario via CSV invece che generarlo l'app, quindi qui si tratta solo di
- * scrivere le partite, non di produrre un girone o un tabellone.
+ * Import del calendario da righe già validate e risolte sulle squadre —
+ * l'organizzatore fornisce il calendario via CSV invece che generarlo l'app.
+ *
+ * L'import RIALLINEA invece di accodare: una riga del file che corrisponde a
+ * una gara già presente (stessa giornata, stesse due squadre) ne aggiorna data,
+ * ora, arbitro e campo lasciando intatti risultato, cronaca, formazioni e voti;
+ * le righe senza corrispondenza diventano nuove partite. Ricaricare lo stesso
+ * CSV è quindi il modo per rimettere in riga gli orari — quelli del file
+ * diventano quelli del calendario — senza duplicare le partite né perdere
+ * quanto già registrato sulle gare giocate.
  */
 export interface RigaCalendarioImport {
   giornata: number;
@@ -689,16 +667,66 @@ export interface RigaCalendarioImport {
   campo?: string;
 }
 
+export interface EsitoImportCalendario {
+  creati: number;
+  aggiornati: number;
+  partite: Partita[];
+}
+
+/** Chiave d'identità di una gara nel calendario: giornata + accoppiamento squadre. */
+function chiaveGara(giornata: number, casaId: string, trasfertaId: string) {
+  return `${giornata}|${casaId}|${trasfertaId}`;
+}
+
+/**
+ * Applica le righe del CSV all'insieme di partite `esistenti`, restituendo
+ * quelle nuove da aggiungere. Le esistenti vengono aggiornate sul posto.
+ */
+function allineaAlCsv(
+  esistenti: Partita[],
+  righe: RigaCalendarioImport[],
+  nuovaPartita: (r: RigaCalendarioImport) => Partita
+): EsitoImportCalendario {
+  const perChiave = new Map(
+    esistenti.map((p) => [chiaveGara(p.giornata, p.squadraCasaId, p.squadraTrasfertaId), p])
+  );
+
+  const nuove: Partita[] = [];
+  let aggiornati = 0;
+
+  righe.forEach((r) => {
+    const esistente = perChiave.get(chiaveGara(r.giornata, r.squadraCasaId, r.squadraTrasfertaId));
+    if (esistente) {
+      esistente.dataOra = r.dataOra;
+      if (r.arbitro !== undefined) esistente.arbitro = r.arbitro;
+      if (r.campo !== undefined) esistente.campo = r.campo;
+      aggiornati += 1;
+      return;
+    }
+    const partita = nuovaPartita(r);
+    nuove.push(partita);
+    // Anche le righe appena create entrano nell'indice: un CSV che ripete due
+    // volte la stessa gara non deve produrne due copie.
+    perChiave.set(chiaveGara(partita.giornata, partita.squadraCasaId, partita.squadraTrasfertaId), partita);
+  });
+
+  return { creati: nuove.length, aggiornati, partite: nuove };
+}
+
 export async function importaCalendarioCompetizione(
   competizioneId: string,
   faseId: string | undefined,
   righe: RigaCalendarioImport[]
-) {
+): Promise<EsitoImportCalendario | undefined> {
   const data = await load();
   const competizione = data.competizioni.find((c) => c.id === competizioneId);
   if (!competizione) return undefined;
 
-  const nuove: Partita[] = righe.map((r) => ({
+  const esistenti = data.partite.filter(
+    (p) => p.competizioneId === competizioneId && (faseId ? p.faseId === faseId : !p.faseId)
+  );
+
+  const esito = allineaAlCsv(esistenti, righe, (r) => ({
     id: `partita-${competizioneId}-${randomUUID()}`,
     stagioneId: data.stagioneAttualeId,
     competizioneId,
@@ -716,9 +744,9 @@ export async function importaCalendarioCompetizione(
     galleryUrls: [],
   }));
 
-  data.partite.push(...nuove);
+  data.partite.push(...esito.partite);
   await persist(data);
-  return nuove;
+  return esito;
 }
 
 /**
@@ -726,28 +754,32 @@ export async function importaCalendarioCompetizione(
  * (nessun competizioneId/faseId: sono le partite "storiche", quelle che
  * alimentano `classifica` invece di `classificheCompetizioni`).
  */
-export async function importaCalendarioPartite(righe: RigaCalendarioImport[]) {
+export async function importaCalendarioPartite(righe: RigaCalendarioImport[]): Promise<EsitoImportCalendario> {
   const data = await load();
 
-  const nuove: Partita[] = righe.map((r) => ({
-    id: `partita-${randomUUID()}`,
-    stagioneId: data.stagioneAttualeId,
-    giornata: r.giornata,
-    dataOra: r.dataOra,
-    stato: "programmata",
-    squadraCasaId: r.squadraCasaId,
-    squadraTrasfertaId: r.squadraTrasfertaId,
-    golCasa: 0,
-    golTrasferta: 0,
-    arbitro: r.arbitro ?? "",
-    campo: r.campo ?? "Campo Sportivo Santa Teresa",
-    eventi: [],
-    galleryUrls: [],
-  }));
+  const esito = allineaAlCsv(
+    data.partite.filter((p) => !p.competizioneId),
+    righe,
+    (r) => ({
+      id: `partita-${randomUUID()}`,
+      stagioneId: data.stagioneAttualeId,
+      giornata: r.giornata,
+      dataOra: r.dataOra,
+      stato: "programmata",
+      squadraCasaId: r.squadraCasaId,
+      squadraTrasfertaId: r.squadraTrasfertaId,
+      golCasa: 0,
+      golTrasferta: 0,
+      arbitro: r.arbitro ?? "",
+      campo: r.campo ?? "Campo Sportivo Santa Teresa",
+      eventi: [],
+      galleryUrls: [],
+    })
+  );
 
-  data.partite.push(...nuove);
+  data.partite.push(...esito.partite);
   await persist(data);
-  return nuove;
+  return esito;
 }
 
 // ---------------------------------------------------------------------------

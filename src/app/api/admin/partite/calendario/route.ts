@@ -25,9 +25,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const create = await importaCalendarioPartite(esito.righe);
+    const importate = await importaCalendarioPartite(esito.righe);
     revalidatePartite();
-    return NextResponse.json({ creati: create.length }, { status: 201 });
+    return NextResponse.json({ creati: importate.creati, aggiornati: importate.aggiornati }, { status: 201 });
   } catch (err) {
     return erroreApi(err, "Impossibile importare il calendario.");
   }
