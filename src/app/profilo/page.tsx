@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
+import { AccountStatus } from "@/components/profile/account-status";
 import { ProfilePreferences } from "@/components/profile/profile-preferences";
 import { OrganizerAreaLink } from "@/components/shared/organizer-area-link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { getSquadre, getGiocatori } from "@/lib/data";
-import { User, LogIn, Bell } from "lucide-react";
+import { User, Bell } from "lucide-react";
 
 export const metadata: Metadata = { title: "Profilo" };
 
@@ -25,20 +24,7 @@ export default async function ProfiloPage() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="flex flex-col items-center gap-3 p-6 text-center sm:flex-row sm:justify-between sm:text-left">
-          <div>
-            <p className="font-display text-base font-bold">Accedi per salvare le tue preferenze</p>
-            <p className="text-sm text-muted-foreground">Sincronizza squadra del cuore, notifiche e voti MVP su tutti i tuoi dispositivi.</p>
-          </div>
-          <Button asChild>
-            <Link href="/auth/login">
-              <LogIn className="size-4" />
-              Accedi o registrati
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <AccountStatus />
 
       <ProfilePreferences squadre={squadre} giocatori={giocatori} />
 
