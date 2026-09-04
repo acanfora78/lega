@@ -57,6 +57,7 @@ export function AdminTabellino({
   righeTrasferta,
   onChange,
   onSalvato,
+  onNonTrovata,
   indisponibili,
 }: {
   partitaId: string;
@@ -73,6 +74,8 @@ export function AdminTabellino({
    * pagina, che da solo non farebbe ripartire lo stato locale già montato.
    */
   onSalvato: (squadraId: string, partita: Partita) => void;
+  /** Il salvataggio risponde "non trovata": la partita non esiste più. */
+  onNonTrovata: () => void;
   /** giocatoreId → squalifica in corso su questa giornata. */
   indisponibili: Record<string, string>;
 }) {
@@ -120,6 +123,7 @@ export function AdminTabellino({
           righe={righe}
           onChange={(nuove) => onChange(squadra.id, nuove)}
           onSalvato={(partita) => onSalvato(squadra.id, partita)}
+          onNonTrovata={onNonTrovata}
           indisponibili={indisponibili}
         />
       </CardContent>
@@ -134,6 +138,7 @@ function RefertoSquadra({
   righe,
   onChange,
   onSalvato,
+  onNonTrovata,
   indisponibili,
 }: {
   partitaId: string;
@@ -142,6 +147,7 @@ function RefertoSquadra({
   righe: RigaTabellino[];
   onChange: (righe: RigaTabellino[]) => void;
   onSalvato: (partita: Partita) => void;
+  onNonTrovata: () => void;
   indisponibili: Record<string, string>;
 }) {
   const router = useRouter();
@@ -222,6 +228,7 @@ function RefertoSquadra({
         body: JSON.stringify({ squadraId: squadra.id, righe }),
       });
       const corpo = await res.json();
+      if (res.status === 404) onNonTrovata();
       if (!res.ok) throw new Error(corpo.error ?? "Errore");
       // La partita tornata dal server è già riconciliata (risultato spostato
       // della differenza, minuti preservati): il genitore la usa per

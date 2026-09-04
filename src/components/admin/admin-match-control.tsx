@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Minus, Plus, Trophy, Loader2, RotateCcw } from "lucide-react";
+import { Minus, Plus, Trophy, Loader2, RotateCcw, ShieldAlert, ArrowLeft } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { AdminTabellino } from "@/components/admin/admin-tabellino";
 import { MatchTimeline } from "@/components/match/timeline";
@@ -62,6 +63,13 @@ export function AdminMatchControl({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isAzzerando, setIsAzzerando] = useState(false);
+  // Diventa vera quando una scrittura risponde "partita non trovata": non
+  // esiste più nell'archivio, tipicamente perché nel frattempo (un'altra
+  // scheda, un altro admin) è stata eliminata o l'intero calendario è stato
+  // svuotato e ricaricato da un CSV — cosa che genera ID nuovi. Da qui in
+  // avanti ogni ulteriore click ripeterebbe lo stesso errore all'infinito:
+  // meglio bloccare la pagina e indirizzare al calendario aggiornato.
+  const [partitaEliminata, setPartitaEliminata] = useState(false);
   const [stato, setStato] = useState<StatoPartita>(partita.stato);
   const [golCasa, setGolCasa] = useState(partita.golCasa);
   const [golTrasferta, setGolTrasferta] = useState(partita.golTrasferta);
@@ -124,6 +132,7 @@ export function AdminMatchControl({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    if (res.status === 404) setPartitaEliminata(true);
     if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
     startTransition(() => router.refresh());
   }
@@ -167,6 +176,7 @@ export function AdminMatchControl({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ minuto: minutoForm, tipo: tipoForm, squadraId: squadraForm, giocatoreId: giocatoreForm }),
       });
+      if (res.status === 404) setPartitaEliminata(true);
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Evento aggiunto alla cronaca");
       startTransition(() => router.refresh());
@@ -194,6 +204,7 @@ export function AdminMatchControl({
 
     try {
       const res = await fetch(`/api/admin/partite/${partita.id}/eventi/${eventoId}`, { method: "DELETE" });
+      if (res.status === 404) setPartitaEliminata(true);
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Evento rimosso dalla cronaca");
       startTransition(() => router.refresh());
@@ -245,6 +256,7 @@ export function AdminMatchControl({
     setIsAzzerando(true);
     try {
       const res = await fetch(`/api/admin/partite/${partita.id}/azzera`, { method: "POST" });
+      if (res.status === 404) setPartitaEliminata(true);
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
 
       const svuotata: Partita = { ...partita, eventi: [], formazioneCasa: undefined, formazioneTrasferta: undefined, voti: [] };
@@ -262,6 +274,28 @@ export function AdminMatchControl({
     } finally {
       setIsAzzerando(false);
     }
+  }
+
+  if (partitaEliminata) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+          <ShieldAlert className="size-8 text-danger" />
+          <p className="font-display text-lg font-bold">Questa partita non esiste più</p>
+          <p className="max-w-md text-sm text-muted-foreground">
+            {casa.nomeBreve} - {trasferta.nomeBreve} non è più nel calendario: probabilmente è stata eliminata, o il
+            calendario è stato svuotato e ricaricato da un CSV nel frattempo (in quel caso ogni gara nasce con un
+            indirizzo nuovo, e questa pagina restava aperta su quello vecchio). Le modifiche fatte qui da quando la
+            pagina si è aperta non sono state salvate.
+          </p>
+          <Button asChild className="mt-2">
+            <Link href="/admin/partite">
+              <ArrowLeft className="size-4" /> Torna al calendario
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -332,6 +366,7 @@ export function AdminMatchControl({
         righeTrasferta={righeTrasferta}
         onChange={cambiaTabellino}
         onSalvato={tabellinoSalvato}
+        onNonTrovata={() => setPartitaEliminata(true)}
         indisponibili={indisponibili}
       />
 
