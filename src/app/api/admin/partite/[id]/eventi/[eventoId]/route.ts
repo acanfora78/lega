@@ -12,7 +12,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   try {
     const partita = await eliminaEventoPartita(id, eventoId);
     if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });
-    revalidatePartite(partita.id);
+    await revalidatePartite(partita);
     return NextResponse.json(partita);
   } catch (err) {
     return erroreApi(err, "Impossibile eliminare l'evento.");

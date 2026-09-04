@@ -50,7 +50,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const partita = await aggiungiEventoPartita(id, evento);
     if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });
-    revalidatePartite(partita.id);
+    await revalidatePartite(partita);
     return NextResponse.json(partita, { status: 201 });
   } catch (err) {
     return erroreApi(err, "Impossibile aggiungere l'evento alla cronaca.");

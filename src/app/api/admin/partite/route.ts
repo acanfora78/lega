@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     };
 
     await creaPartita(partita);
-    revalidatePartite(partita.id);
+    await revalidatePartite(partita);
     return NextResponse.json(partita, { status: 201 });
   } catch (err) {
     return erroreApi(err, "Impossibile creare la partita.");

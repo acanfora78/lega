@@ -38,7 +38,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const partita = (await getStore()).partite.find((p) => p.id === id);
     if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });
-    revalidatePartite(partita.id);
+    await revalidatePartite(partita);
     return NextResponse.json(partita);
   } catch (err) {
     return erroreApi(err, "Impossibile salvare le modifiche alla partita.");
@@ -51,8 +51,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   try {
+    // Catturata prima di eliminare: dopo eliminaPartita() non è più
+    // nell'archivio, ma serve ancora per sapere quali squadre/giocatori/
+    // competizione invalidare.
+    const partita = (await getStore()).partite.find((p) => p.id === id);
     await eliminaPartita(id);
-    revalidatePartite(id);
+    await revalidatePartite(partita);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return erroreApi(err, "Impossibile eliminare la partita.");

@@ -1,4 +1,7 @@
 import { revalidatePath } from "next/cache";
+import { getSquadraById } from "@/lib/data/teams";
+import { getCompetizioneById } from "@/lib/data/competizioni";
+import type { Partita } from "@/lib/types";
 
 // ============================================================================
 // REVALIDAZIONE MIRATA
@@ -45,9 +48,51 @@ export function revalidateGiocatori(opts: { giocatoreId?: string; squadraSlug?: 
   if (opts.squadraSlug) revalidatePath(`/squadre/${opts.squadraSlug}`);
 }
 
-export function revalidatePartite(partitaId?: string) {
+/**
+ * Tutto quello che il risultato o il tabellino di UNA gara possono aver
+ * cambiato: prima si fermava alle pagine elenco più `/partite/[id]`, e le
+ * schede di dettaglio (la squadra, il singolo giocatore, l'eventuale
+ * competizione) restavano al tetto di sicurezza di 5 minuti — un gol appena
+ * salvato si vedeva subito in classifica ma non sulla scheda del marcatore
+ * o delle due squadre coinvolte, finché la cache non scadeva da sola.
+ *
+ * Qui si accetta il costo di qualche lookup in più (le due squadre, ed
+ * eventualmente la competizione) per invalidare anche quelle, nell'istante
+ * in cui la gara viene salvata. Senza l'oggetto partita (es. l'import massivo
+ * del calendario, dove non ha senso risalire gara per gara) si ricade sulle
+ * sole pagine elenco, come prima.
+ */
+export async function revalidatePartite(partita?: Partita) {
   revalidateMany(["/", "/partite", "/classifica", "/statistiche", "/disciplinare", "/squadre"]);
-  if (partitaId) revalidatePath(`/partite/${partitaId}`);
+  if (!partita) return;
+
+  revalidatePath(`/partite/${partita.id}`);
+
+  const [casa, trasferta] = await Promise.all([
+    getSquadraById(partita.squadraCasaId),
+    getSquadraById(partita.squadraTrasfertaId),
+  ]);
+  if (casa) revalidatePath(`/squadre/${casa.slug}`);
+  if (trasferta) revalidatePath(`/squadre/${trasferta.slug}`);
+
+  // Chiunque compaia negli eventi, negli assist, nei voti, nella distinta o
+  // come MVP: sono loro i numeri derivati (gol, assist, cartellini, media
+  // voto, presenze) che possono essere cambiati con questo salvataggio.
+  const giocatoriCoinvolti = new Set<string>();
+  partita.eventi.forEach((e) => {
+    if (e.giocatoreId) giocatoriCoinvolti.add(e.giocatoreId);
+    if (e.assistGiocatoreId) giocatoriCoinvolti.add(e.assistGiocatoreId);
+  });
+  partita.voti?.forEach((v) => giocatoriCoinvolti.add(v.giocatoreId));
+  partita.formazioneCasa?.forEach((f) => giocatoriCoinvolti.add(f.giocatoreId));
+  partita.formazioneTrasferta?.forEach((f) => giocatoriCoinvolti.add(f.giocatoreId));
+  if (partita.mvpGiocatoreId) giocatoriCoinvolti.add(partita.mvpGiocatoreId);
+  giocatoriCoinvolti.forEach((id) => revalidatePath(`/giocatori/${id}`));
+
+  if (partita.competizioneId) {
+    const competizione = await getCompetizioneById(partita.competizioneId);
+    if (competizione) revalidatePath(`/competizioni/${competizione.slug}`);
+  }
 }
 
 export function revalidateNews(slug?: string) {

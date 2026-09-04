@@ -56,7 +56,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const partita = await impostaTabellinoPartita(id, squadraId, righe);
     if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });
-    revalidatePartite(partita.id);
+    await revalidatePartite(partita);
     return NextResponse.json(partita);
   } catch (err) {
     return erroreApi(err, "Impossibile salvare il tabellino.");

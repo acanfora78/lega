@@ -23,7 +23,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   try {
     const partita = await azzeraStatistichePartita(id);
     if (!partita) return NextResponse.json({ error: "Partita non trovata." }, { status: 404 });
-    revalidatePartite(partita.id);
+    await revalidatePartite(partita);
     return NextResponse.json(partita);
   } catch (err) {
     return erroreApi(err, "Impossibile azzerare le statistiche della partita.");
