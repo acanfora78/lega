@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Trash2, Loader2, Settings2 } from "lucide-react";
+import { Plus, Trash2, Loader2, Settings2, ShieldAlert } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { CalendarioCsvUpload } from "@/components/admin/calendario-csv-upload";
 import { Card, CardContent } from "@/components/ui/card";
@@ -128,7 +128,22 @@ export function AdminCompetizioneDetail({
                       const casa = squadreMap.get(p.squadraCasaId);
                       const trasferta = squadreMap.get(p.squadraTrasfertaId);
                       const fase = competizione.fasi.find((f) => f.id === p.faseId);
-                      if (!casa || !trasferta) return null;
+                      // Non sparisce in silenzio: una squadra citata dalla gara ma
+                      // non più esistente resta visibile come anomalia da
+                      // controllare, invece di far sembrare la gara mai esistita.
+                      if (!casa || !trasferta) {
+                        return (
+                          <tr key={p.id} className="border-b border-border/60 bg-danger/5 last:border-0">
+                            <td className="px-4 py-3 font-semibold">G{p.giornata}</td>
+                            <td className="px-2 py-3 text-xs text-danger" colSpan={5}>
+                              <span className="flex items-center gap-1.5">
+                                <ShieldAlert className="size-3.5 shrink-0" />
+                                Squadra non trovata — probabilmente eliminata dopo aver programmato questa gara.
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      }
                       return (
                         <tr key={p.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
                           <td className="px-4 py-3 font-semibold">G{p.giornata}</td>

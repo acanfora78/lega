@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Settings2, Loader2, Trash2 } from "lucide-react";
+import { Plus, Settings2, Loader2, Trash2, ShieldAlert, TriangleAlert } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,12 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [nascoste, setNascoste] = useState<Set<string>>(new Set());
+  // Partite appena create: comparire subito, senza aspettare che il
+  // refresh porti indietro le props aggiornate dal server. Una volta che
+  // `partite` le contiene davvero, il filtro sotto le esclude da qui — non
+  // restano a lungo, sono solo il ponte fra il click e il refresh.
+  const [appenaCreate, setAppenaCreate] = useState<Partita[]>([]);
+  const [svuotamento, setSvuotamento] = useState(false);
   const squadreMap = useMemo(() => new Map(squadre.map((s) => [s.id, s])), [squadre]);
 
   async function crea(form: FormData) {
@@ -43,7 +49,9 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
           campo: String(form.get("campo") ?? "Campo Sportivo Santa Teresa"),
         }),
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      const partitaCreata = await res.json();
+      if (!res.ok) throw new Error(partitaCreata.error ?? "Errore");
+      setAppenaCreate((prev) => [...prev, partitaCreata]);
       toast.success("Partita aggiunta al calendario");
       setOpen(false);
       startTransition(() => router.refresh());
@@ -70,12 +78,45 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
     }
   }
 
-  const partiteVisibili = partite.filter((p) => !nascoste.has(p.id));
+  async function svuotaCalendario() {
+    if (
+      !window.confirm(
+        `Svuotare l'intero calendario del campionato? Tutte le ${partite.length} partite verranno eliminate — risultati, cronaca, tabellini e voti compresi. Le competizioni aggiuntive non sono toccate. L'operazione non è reversibile: potrai poi ricaricare un CSV da capo.`
+      )
+    ) {
+      return;
+    }
+    setSvuotamento(true);
+    try {
+      const res = await fetch("/api/admin/partite/svuota", { method: "POST" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      setNascoste(new Set(partite.map((p) => p.id)));
+      setAppenaCreate([]);
+      toast.success("Calendario svuotato");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile svuotare il calendario");
+    } finally {
+      setSvuotamento(false);
+    }
+  }
+
+  const idGiaNoti = new Set(partite.map((p) => p.id));
+  const partiteVisibili = [
+    ...partite.filter((p) => !nascoste.has(p.id)),
+    ...appenaCreate.filter((p) => !idGiaNoti.has(p.id) && !nascoste.has(p.id)),
+  ];
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {isPending && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+        {partite.length > 0 && (
+          <Button variant="destructive" size="sm" onClick={svuotaCalendario} disabled={svuotamento}>
+            {svuotamento ? <Loader2 className="size-4 animate-spin" /> : <TriangleAlert className="size-4" />}
+            Svuota calendario
+          </Button>
+        )}
         <Button size="sm" onClick={() => setOpen(true)} disabled={squadre.length < 2}>
           <Plus className="size-4" /> Nuova partita
         </Button>
@@ -111,7 +152,34 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
                 .map((p) => {
                   const casa = squadreMap.get(p.squadraCasaId);
                   const trasferta = squadreMap.get(p.squadraTrasfertaId);
-                  if (!casa || !trasferta) return null;
+                  // Una squadra citata dalla gara ma non più tra quelle esistenti
+                  // non deve far sparire la riga in silenzio: si vede il problema
+                  // e resta comunque possibile eliminare la gara per risolverlo.
+                  if (!casa || !trasferta) {
+                    return (
+                      <tr key={p.id} className="border-b border-border/60 bg-danger/5 last:border-0">
+                        <td className="px-4 py-3 font-semibold">G{p.giornata}</td>
+                        <td className="hidden px-2 py-3 text-muted-foreground sm:table-cell">
+                          {formatDateIt(p.dataOra)} · {formatTimeIt(p.dataOra)}
+                        </td>
+                        <td className="px-2 py-3" colSpan={3}>
+                          <span className="flex items-center gap-1.5 text-xs text-danger">
+                            <ShieldAlert className="size-3.5 shrink-0" />
+                            {!casa && "Squadra di casa"}
+                            {!casa && !trasferta && " e squadra "}
+                            {!trasferta && (casa ? "Squadra " : "")}
+                            {!trasferta && "ospite"}
+                            {" non trovata — probabilmente eliminata dopo aver programmato questa gara."}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Button variant="ghost" size="icon" onClick={() => elimina(p.id)} aria-label="Elimina partita">
+                            <Trash2 className="size-4 text-danger" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  }
                   return (
                     <tr key={p.id} className="border-b border-border/60 last:border-0 hover:bg-white/[0.03]">
                       <td className="px-4 py-3 font-semibold">G{p.giornata}</td>

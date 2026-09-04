@@ -494,6 +494,21 @@ export async function eliminaPartita(id: string) {
   data.partite = data.partite.filter((p) => p.id !== id);
   await persist(data);
   if (partita) await ricalcolaClassificaPerPartita(partita);
+  return partita;
+}
+
+/**
+ * Svuota per intero il calendario del campionato principale: ogni partita
+ * senza competizioneId sparisce, con cronaca, tabellini e voti che porta
+ * dietro. Le partite delle competizioni aggiuntive non sono toccate — hanno
+ * il loro calendario e la loro classifica separati. Pensata per ripartire da
+ * zero con un nuovo CSV invece di eliminare gara per gara.
+ */
+export async function svuotaCalendarioPartite() {
+  const data = await load();
+  data.partite = data.partite.filter((p) => Boolean(p.competizioneId));
+  data.classifica = calcolaClassifica(data.squadre, []);
+  await persist(data);
 }
 
 export async function aggiornaStatoPartita(id: string, stato: StatoPartita) {
