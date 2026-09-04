@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Minus, Plus, Trophy, Loader2 } from "lucide-react";
+import { Minus, Plus, Trophy, Loader2, RotateCcw } from "lucide-react";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { AdminTabellino } from "@/components/admin/admin-tabellino";
 import { MatchTimeline } from "@/components/match/timeline";
@@ -61,6 +61,7 @@ export function AdminMatchControl({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isAzzerando, setIsAzzerando] = useState(false);
   const [stato, setStato] = useState<StatoPartita>(partita.stato);
   const [golCasa, setGolCasa] = useState(partita.golCasa);
   const [golTrasferta, setGolTrasferta] = useState(partita.golTrasferta);
@@ -205,6 +206,43 @@ export function AdminMatchControl({
     }
   }
 
+  /**
+   * Cancella cronaca, distinta, voti, MVP e risultato riportando la gara a
+   * 0-0: la partita resta nel calendario, cambia solo cosa vi è registrato
+   * sopra. Se era conclusa, la classifica si aggiorna lato server di
+   * conseguenza — qui si azzera anche lo stato locale, così lo schermo non
+   * resta a mostrare un punteggio che in archivio non esiste più.
+   */
+  async function azzeraStatistiche() {
+    if (
+      !window.confirm(
+        `Azzerare tabellino e risultato di ${casa.nomeBreve} - ${trasferta.nomeBreve}? Cronaca, distinta, voti, MVP e punteggio torneranno a 0-0. L'operazione non è reversibile.`
+      )
+    ) {
+      return;
+    }
+    setIsAzzerando(true);
+    try {
+      const res = await fetch(`/api/admin/partite/${partita.id}/azzera`, { method: "POST" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+
+      const svuotata: Partita = { ...partita, eventi: [], formazioneCasa: undefined, formazioneTrasferta: undefined, voti: [] };
+      setGolCasa(0);
+      setGolTrasferta(0);
+      setEventi([]);
+      setMvpId("");
+      setRigheCasa(leggiTabellino(svuotata, rosterCasa));
+      setRigheTrasferta(leggiTabellino(svuotata, rosterTrasferta));
+
+      toast.success("Tabellino e risultato azzerati");
+      startTransition(() => router.refresh());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Impossibile azzerare le statistiche");
+    } finally {
+      setIsAzzerando(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {isPending && (
@@ -249,6 +287,16 @@ export function AdminMatchControl({
             <Badge variant={stato === "live" ? "live" : "muted"} className="capitalize">
               {stato}
             </Badge>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="ml-auto"
+              onClick={azzeraStatistiche}
+              disabled={isAzzerando}
+            >
+              {isAzzerando ? <Loader2 className="size-3.5 animate-spin" /> : <RotateCcw className="size-3.5" />}
+              Azzera tabellino e risultato
+            </Button>
           </div>
         </CardContent>
       </Card>

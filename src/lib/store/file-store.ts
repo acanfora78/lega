@@ -640,6 +640,38 @@ export async function eliminaEventoPartita(id: string, eventoId: string) {
   return partita;
 }
 
+/**
+ * Azzera le statistiche e il risultato di una partita, mantenendo la gara
+ * stessa (squadre, giornata, data): cronaca, distinta, voti, MVP e punteggio
+ * tornano allo stato "non ancora giocata", pronta per essere ricompilata da
+ * zero. A differenza di eliminaPartita, che toglie la gara dal calendario,
+ * qui la gara resta — cambia solo cosa vi è stato registrato sopra.
+ *
+ * Nessuna squalifica orfana da ripulire: le posizioni disciplinari
+ * (calcolaPosizioniDisciplinari) si ricalcolano da sole dagli eventi ad ogni
+ * lettura, e le squalifiche registrate a mano in data.squalifiche non
+ * referenziano una partita specifica (solo un numero di giornata), quindi
+ * azzerare una gara non le tocca.
+ */
+export async function azzeraStatistichePartita(id: string) {
+  const data = await load();
+  const partita = data.partite.find((p) => p.id === id);
+  if (!partita) return undefined;
+
+  partita.eventi = [];
+  partita.golCasa = 0;
+  partita.golTrasferta = 0;
+  partita.voti = [];
+  partita.formazioneCasa = undefined;
+  partita.formazioneTrasferta = undefined;
+  partita.mvpGiocatoreId = undefined;
+  partita.statistiche = undefined;
+
+  await persist(data);
+  if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
+  return partita;
+}
+
 // ---------------------------------------------------------------------------
 // COMPETIZIONI — tornei aggiuntivi paralleli al campionato principale
 // ---------------------------------------------------------------------------
