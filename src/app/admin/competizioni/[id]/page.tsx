@@ -3,11 +3,12 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminCompetizioneDetail } from "@/components/admin/admin-competizione-detail";
-import { getCompetizioneById, getCompetizioni, getPartiteCompetizione, getSquadre } from "@/lib/data";
+import { getCompetizioneById, getPartiteCompetizione, getSquadre } from "@/lib/data";
 
-export async function generateStaticParams() {
-  return (await getCompetizioni()).map((c) => ({ id: c.id }));
-}
+// Niente generateStaticParams: rendeva la pagina statica e messa in cache
+// dal server — stessa causa di "salvo, ricarico, torna indietro" trovata su
+// /admin/partite/[id]. La freschezza è garantita ora da
+// src/app/admin/layout.tsx (force-dynamic su tutta l'area admin).
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;

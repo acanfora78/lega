@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
-import { AdminMatchControl } from "@/components/admin/admin-match-control";
+import { AdminDistinta } from "@/components/admin/admin-distinta";
 import { getPartitaById, getSquadraById, getGiocatoriDellaSquadra } from "@/lib/data";
 import { getSqualificheRisolte } from "@/lib/data/disciplina";
-
-// Niente generateStaticParams: rendeva questa pagina statica (SSG), messa
-// in cache dal server finché nulla la invalidava esplicitamente — la causa
-// reale di "salvo, ricarico, torna indietro". La freschezza è garantita ora
-// da src/app/admin/layout.tsx (force-dynamic su tutta l'area admin); qui
-// basta non pre-generare parametri che non servono più a niente.
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -18,26 +14,27 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   if (!p) return {};
   const casa = await getSquadraById(p.squadraCasaId);
   const trasferta = await getSquadraById(p.squadraTrasfertaId);
-  return { title: `Gestisci: ${casa?.nomeBreve} vs ${trasferta?.nomeBreve}` };
+  return { title: `Distinta: ${casa?.nomeBreve} vs ${trasferta?.nomeBreve}` };
 }
 
-export default async function AdminPartitaDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminDistintaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const partita = await getPartitaById(id);
   if (!partita) notFound();
 
-  const casa = (await getSquadraById(partita.squadraCasaId))!;
-  const trasferta = (await getSquadraById(partita.squadraTrasfertaId))!;
+  const casa = await getSquadraById(partita.squadraCasaId);
+  const trasferta = await getSquadraById(partita.squadraTrasfertaId);
+  if (!casa || !trasferta) notFound();
+
   const [rosterCasa, rosterTrasferta, squalifiche] = await Promise.all([
     getGiocatoriDellaSquadra(casa.id),
     getGiocatoriDellaSquadra(trasferta.id),
     getSqualificheRisolte(partita.giornata),
   ]);
 
-  // Chi sta scontando una squalifica proprio in questa giornata: la distinta lo
-  // segnala, così non finisce in campo per una svista e non si arriva al
-  // reclamo a partita giocata. Le squalifiche sono quelle del campionato, quindi
-  // la segnalazione vale solo per le sue gare: su una coppa direbbe il falso.
+  // Stessa segnalazione della gestione partita: chi sta scontando una
+  // squalifica proprio in questa giornata non viene bloccato, ma è
+  // evidenziato per non finire in distinta per disattenzione.
   const indisponibili: Record<string, string> = {};
   squalifiche
     .filter((s) => !partita.competizioneId && s.giornataDa <= partita.giornata && partita.giornata <= s.giornataA)
@@ -50,18 +47,23 @@ export default async function AdminPartitaDetailPage({ params }: { params: Promi
   return (
     <Container className="flex flex-col gap-6 pt-6 sm:pt-10">
       <div>
-        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-gold-bright">Gestione partita — Giornata {partita.giornata}</p>
+        <Link href="/admin/distinte" className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-3.5" /> Tutte le distinte
+        </Link>
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-gold-bright">Distinta — Giornata {partita.giornata}</p>
         <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-4xl">
           {casa.nomeBreve} vs {trasferta.nomeBreve}
         </h1>
       </div>
       <AdminShell>
-        <AdminMatchControl
-          partita={partita}
+        <AdminDistinta
+          partitaId={partita.id}
           casa={casa}
           trasferta={trasferta}
           rosterCasa={rosterCasa}
           rosterTrasferta={rosterTrasferta}
+          distintaCasa={partita.formazioneCasa ?? []}
+          distintaTrasferta={partita.formazioneTrasferta ?? []}
           indisponibili={indisponibili}
         />
       </AdminShell>
