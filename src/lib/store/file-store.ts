@@ -160,33 +160,107 @@ function statoIniziale(): LegaData {
 }
 
 // ---------------------------------------------------------------------------
+// CONCORRENZA — due scritture ravvicinate non devono più cancellarsi a vicenda
+// ---------------------------------------------------------------------------
+// Ogni funzione di scrittura fa load() → muta la propria copia → persist():
+// senza alcun controllo, se due richieste si sovrappongono (due schede
+// aperte, un import mentre un'altra scrittura è in corso, due organizzatori)
+// la seconda persist() sovrascriveva per intero il blob JSONB con la PROPRIA
+// copia, basata su uno stato ormai vecchio — cancellando in silenzio quello
+// che la prima aveva appena scritto. Una partita salvata spariva senza che
+// nessun errore lo segnalasse: esattamente il sintomo di "partita non
+// trovata" al salvataggio, dopo che la pagina l'aveva appena mostrata.
+//
+// `versioneDi` lega ogni oggetto LegaData restituito da load() alla versione
+// che aveva in quel momento (updated_at su Supabase, mtime sul file), senza
+// dover cambiare la firma delle ~40 funzioni che già fanno
+// `const data = await load(); ...; await persist(data);` — la stessa identica
+// referenza attraversa entrambe le chiamate, quindi persist() può risalire
+// alla versione di partenza senza che nessun chiamante debba passarla a mano.
+const versioneDi = new WeakMap<LegaData, string>();
+/** Sentinella: la riga non esisteva ancora quando è stata letta (primo avvio). */
+const RIGA_ASSENTE = "riga-assente";
+
+export class ConflittoScritturaError extends Error {
+  constructor() {
+    super("Qualcun altro ha modificato questi dati nel frattempo. Ricarica la pagina e riprova.");
+    this.name = "ConflittoScritturaError";
+  }
+}
+
+// ---------------------------------------------------------------------------
 // BACKEND SUPABASE — unica riga JSONB nella tabella lega_store
 // ---------------------------------------------------------------------------
 async function loadFromSupabase(): Promise<LegaData> {
   try {
     const supabase = createReadOnlyClient();
-    const { data, error } = await supabase.from("lega_store").select("data").eq("id", 1).maybeSingle();
+    const { data, error } = await supabase.from("lega_store").select("data, updated_at").eq("id", 1).maybeSingle();
     if (error) throw error;
-    if (!data) return statoIniziale();
-    return { ...statoIniziale(), ...(data.data as Partial<LegaData>) };
+    if (!data) {
+      const iniziale = statoIniziale();
+      versioneDi.set(iniziale, RIGA_ASSENTE);
+      return iniziale;
+    }
+    const unita = { ...statoIniziale(), ...(data.data as Partial<LegaData>) };
+    versioneDi.set(unita, data.updated_at as string);
+    return unita;
   } catch (err) {
+    // Lettura fallita (rete, RLS): stato iniziale in memoria SENZA versione
+    // registrata. Chi lo usa solo per leggere (pagine pubbliche) degrada
+    // correttamente a "nessun dato". Chi lo passasse a persist() per
+    // scriverci sopra viene bloccato più sotto — altrimenti una lettura
+    // fallita per un blip di rete scriverebbe una lega vuota sopra a quella
+    // vera, un danno ben peggiore del conflitto che questo meccanismo vuole
+    // prevenire.
     console.warn("[store] Lettura da Supabase fallita, uso stato iniziale in memoria.", err);
     return statoIniziale();
   }
 }
 
 async function persistToSupabase(data: LegaData) {
-  // A differenza di loadFromSupabase, qui l'errore NON va inghiottito: se una
-  // scrittura fallisce (sessione scaduta, RLS, rete) il chiamante deve saperlo,
-  // altrimenti la route API risponde "successo" mentre il database non è mai
-  // stato aggiornato — l'organizzatore vede sparire una riga e la ritrova al
-  // refresh successivo, perché quello che ha "salvato" non è mai stato scritto.
+  const versioneAttesa = versioneDi.get(data);
+  if (versioneAttesa === undefined) {
+    // Mai state lette con successo: scrivere ora significherebbe sovrascrivere
+    // dati reali con una copia partita da uno stato sconosciuto.
+    throw new Error(
+      "Impossibile salvare: la lettura dei dati precedente non è riuscita, quindi non è sicuro scriverci sopra. Riprova."
+    );
+  }
+
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.from("lega_store").upsert({ id: 1, data, updated_at: new Date().toISOString() });
+  const nuovaVersione = new Date().toISOString();
+
+  if (versioneAttesa === RIGA_ASSENTE) {
+    // Primo avvio in assoluto: nessuna riga da condizionare, si inserisce.
+    // Se due richieste bootstrappano insieme, il vincolo di chiave primaria
+    // su id=1 fa fallire la seconda invece di lasciarle sovrascrivere a
+    // vicenda: la si traduce nello stesso errore di conflitto.
+    const { error } = await supabase.from("lega_store").insert({ id: 1, data, updated_at: nuovaVersione });
+    if (error) {
+      if (error.code === "23505") throw new ConflittoScritturaError();
+      console.error("[store] Scrittura su Supabase fallita.", error);
+      throw error;
+    }
+    versioneDi.set(data, nuovaVersione);
+    return;
+  }
+
+  const { data: righe, error } = await supabase
+    .from("lega_store")
+    .update({ data, updated_at: nuovaVersione })
+    .eq("id", 1)
+    .eq("updated_at", versioneAttesa)
+    .select("id");
   if (error) {
     console.error("[store] Scrittura su Supabase fallita.", error);
     throw error;
   }
+  if (!righe || righe.length === 0) {
+    // La condizione updated_at = versioneAttesa non ha trovato righe: nel
+    // frattempo qualcun altro ha già scritto. Non si sovrascrive alla cieca.
+    throw new ConflittoScritturaError();
+  }
+  versioneDi.set(data, nuovaVersione);
 }
 
 // ---------------------------------------------------------------------------
@@ -210,10 +284,18 @@ function loadFromFile(): LegaData {
     if (!fs.existsSync(DATA_FILE)) {
       const iniziale = statoIniziale();
       fs.writeFileSync(DATA_FILE, JSON.stringify(iniziale, null, 2), "utf-8");
+      versioneDi.set(iniziale, String(fs.statSync(DATA_FILE).mtimeMs));
       return iniziale;
     }
     const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    return { ...statoIniziale(), ...JSON.parse(raw) };
+    // La versione (mtime) va letta PRIMA del contenuto: se qualcuno scrive nel
+    // mezzo, si scarta comunque una lettura potenzialmente inconsistente al
+    // prossimo giro invece di fidarsi di un mtime che nel frattempo è già
+    // cambiato di nuovo.
+    const versione = String(fs.statSync(DATA_FILE).mtimeMs);
+    const unita = { ...statoIniziale(), ...JSON.parse(raw) };
+    versioneDi.set(unita, versione);
+    return unita;
   } catch (err) {
     if (isFilesystemReadOnly(err)) {
       filesystemScrivibile = false;
@@ -228,10 +310,20 @@ function loadFromFile(): LegaData {
 
 function persistToFile(data: LegaData) {
   if (!filesystemScrivibile) return;
+  const versioneAttesa = versioneDi.get(data);
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    // Stesso principio del backend Supabase: se il file è cambiato rispetto a
+    // quando è stato letto, qualcun altro ha già scritto nel frattempo — non
+    // si sovrascrive alla cieca con una copia partita da uno stato vecchio.
+    if (versioneAttesa !== undefined && versioneAttesa !== RIGA_ASSENTE && fs.existsSync(DATA_FILE)) {
+      const versioneAttuale = String(fs.statSync(DATA_FILE).mtimeMs);
+      if (versioneAttuale !== versioneAttesa) throw new ConflittoScritturaError();
+    }
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+    versioneDi.set(data, String(fs.statSync(DATA_FILE).mtimeMs));
   } catch (err) {
+    if (err instanceof ConflittoScritturaError) throw err;
     if (isFilesystemReadOnly(err)) filesystemScrivibile = false;
   }
 }
