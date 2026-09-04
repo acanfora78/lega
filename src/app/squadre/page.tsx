@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
+import { OrganizerOnly } from "@/components/shared/organizer-area-link";
 import { TeamCard } from "@/components/team/team-card";
 import { Button } from "@/components/ui/button";
 import { getSquadre, getRigaClassifica, getStagioneAttuale } from "@/lib/data";
@@ -29,11 +30,13 @@ export default async function SquadrePage() {
           <p className="max-w-md text-sm text-muted-foreground">
             L&apos;area organizzatore può iniziare ad aggiungere i club iscritti al campionato dal pannello di gestione.
           </p>
-          <Button asChild className="mt-2">
-            <Link href="/admin/squadre">
-              <ShieldCheck className="size-4" /> Aggiungi la prima squadra
-            </Link>
-          </Button>
+          <OrganizerOnly>
+            <Button asChild className="mt-2">
+              <Link href="/admin/squadre">
+                <ShieldCheck className="size-4" /> Aggiungi la prima squadra
+              </Link>
+            </Button>
+          </OrganizerOnly>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

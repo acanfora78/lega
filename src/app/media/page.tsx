@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { MediaExplorer } from "@/components/media/media-explorer";
+import { OrganizerOnly } from "@/components/shared/organizer-area-link";
 import { Button } from "@/components/ui/button";
 import { getAlbum } from "@/lib/data";
 import { Images, ShieldCheck } from "lucide-react";
@@ -25,11 +26,13 @@ export default async function MediaPage() {
           <p className="max-w-md text-sm text-muted-foreground">
             Foto, video e highlights caricati dall&apos;area organizzatore compariranno in questa galleria.
           </p>
-          <Button asChild className="mt-2">
-            <Link href="/admin/media">
-              <ShieldCheck className="size-4" /> Carica il primo contenuto
-            </Link>
-          </Button>
+          <OrganizerOnly>
+            <Button asChild className="mt-2">
+              <Link href="/admin/media">
+                <ShieldCheck className="size-4" /> Carica il primo contenuto
+              </Link>
+            </Button>
+          </OrganizerOnly>
         </div>
       ) : (
         <MediaExplorer album={album} />

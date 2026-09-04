@@ -3,18 +3,16 @@ import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { LegaMonogram } from "@/components/brand/pitch-art";
 import { NotificationSettings } from "@/components/shared/notification-settings";
+import { OrganizerAreaLink } from "@/components/shared/organizer-area-link";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Archive,
   BarChart3,
   Bell,
-  Crown,
-  Gavel,
   Images,
   MapPinned,
   Newspaper,
   Search,
-  ShieldCheck,
   Swords,
   User,
   ChevronRight,
@@ -27,14 +25,11 @@ const VOCI = [
   { href: "/statistiche", label: "Centro Statistiche", desc: "Marcatori, assist, record e leaderboard", icon: BarChart3 },
   { href: "/competizioni", label: "Competizioni", desc: "Coppe e tornei aggiuntivi paralleli al campionato", icon: Swords },
   { href: "/campionati-passati", label: "Campionati Passati", desc: "Classifiche e marcatori delle stagioni concluse", icon: Archive },
-  { href: "/hall-of-fame", label: "Hall of Fame", desc: "Albo d'oro e leggende della Lega", icon: Crown },
   { href: "/media", label: "Media Center", desc: "Foto, video e highlights", icon: Images },
   { href: "/news", label: "News & Comunicati", desc: "Tutte le notizie ufficiali", icon: Newspaper },
-  { href: "/disciplinare", label: "Giudice Sportivo", desc: "Squalifiche, diffide e conteggio cartellini", icon: Gavel },
   { href: "/campo", label: "Campo Santa Teresa", desc: "Come arrivare, servizi e regolamento", icon: MapPinned },
   { href: "/ricerca", label: "Ricerca", desc: "Squadre, giocatori, partite e sponsor", icon: Search },
   { href: "/profilo", label: "Il tuo profilo", desc: "Preferenze, squadra del cuore, dark mode", icon: User },
-  { href: "/admin", label: "Area Organizzatore", desc: "Gestione completa del campionato", icon: ShieldCheck },
 ];
 
 export default function AltroPage() {
@@ -61,6 +56,7 @@ export default function AltroPage() {
             <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
           </Link>
         ))}
+        <OrganizerAreaLink variant="tile" />
       </section>
 
       <section id="notifiche" className="scroll-mt-24">

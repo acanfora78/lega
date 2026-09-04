@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { ClassificaTabs } from "@/components/shared/classifica-tabs";
 import { LegendaCoppe } from "@/components/shared/legenda-coppe";
+import { OrganizerOnly } from "@/components/shared/organizer-area-link";
 import { Button } from "@/components/ui/button";
 import {
   getClassificaGenerale,
@@ -47,11 +48,13 @@ export default async function ClassificaPage() {
           <p className="max-w-md text-sm text-muted-foreground">
             Comparirà automaticamente non appena l&apos;area organizzatore avrà aggiunto squadre e risultati.
           </p>
-          <Button asChild className="mt-2">
-            <Link href="/admin/squadre">
-              <ShieldCheck className="size-4" /> Configura le squadre
-            </Link>
-          </Button>
+          <OrganizerOnly>
+            <Button asChild className="mt-2">
+              <Link href="/admin/squadre">
+                <ShieldCheck className="size-4" /> Configura le squadre
+              </Link>
+            </Button>
+          </OrganizerOnly>
         </div>
       ) : (
         <>

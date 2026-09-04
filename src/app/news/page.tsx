@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { NewsCard } from "@/components/news/news-card";
+import { OrganizerOnly } from "@/components/shared/organizer-area-link";
 import { Button } from "@/components/ui/button";
 import { getArticoli } from "@/lib/data";
 import { Newspaper, ShieldCheck } from "lucide-react";
@@ -27,11 +28,13 @@ export default async function NewsPage() {
           <p className="max-w-md text-sm text-muted-foreground">
             Gli articoli e i comunicati ufficiali pubblicati dall&apos;area organizzatore compariranno qui.
           </p>
-          <Button asChild className="mt-2">
-            <Link href="/admin/news">
-              <ShieldCheck className="size-4" /> Pubblica il primo articolo
-            </Link>
-          </Button>
+          <OrganizerOnly>
+            <Button asChild className="mt-2">
+              <Link href="/admin/news">
+                <ShieldCheck className="size-4" /> Pubblica il primo articolo
+              </Link>
+            </Button>
+          </OrganizerOnly>
         </div>
       ) : (
         <>

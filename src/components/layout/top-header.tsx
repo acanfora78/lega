@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Bell, ShieldCheck, User } from "lucide-react";
+import { Search, Bell, User } from "lucide-react";
 import { LegaMonogram } from "@/components/brand/pitch-art";
+import { OrganizerAreaLink } from "@/components/shared/organizer-area-link";
 import { cn } from "@/lib/utils";
 
 const DESKTOP_ITEMS = [
@@ -15,7 +16,6 @@ const DESKTOP_ITEMS = [
   { href: "/news", label: "News" },
   { href: "/media", label: "Media" },
   { href: "/campionati-passati", label: "Campionati Passati" },
-  { href: "/hall-of-fame", label: "Hall of Fame" },
 ];
 
 export function TopHeader() {
@@ -61,13 +61,7 @@ export function TopHeader() {
           <Link href="/altro#notifiche" className="ring-focus rounded-full p-2.5 text-muted-foreground hover:bg-white/[0.06] hover:text-foreground" aria-label="Notifiche">
             <Bell className="size-[18px]" />
           </Link>
-          <Link
-            href="/admin"
-            className="ring-focus hidden rounded-full p-2.5 text-muted-foreground hover:bg-white/[0.06] hover:text-foreground sm:flex"
-            aria-label="Area Organizzatore"
-          >
-            <ShieldCheck className="size-[18px]" />
-          </Link>
+          <OrganizerAreaLink variant="icon" />
           <Link
             href="/profilo"
             className="ring-focus flex items-center gap-2 rounded-full border border-border-strong bg-white/[0.03] py-1.5 pl-1.5 pr-3 hover:bg-white/[0.06]"

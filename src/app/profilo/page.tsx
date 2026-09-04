@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/shared/container";
 import { ProfilePreferences } from "@/components/profile/profile-preferences";
+import { OrganizerAreaLink } from "@/components/shared/organizer-area-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getSquadre, getGiocatori } from "@/lib/data";
-import { User, LogIn, Bell, ShieldCheck } from "lucide-react";
+import { User, LogIn, Bell } from "lucide-react";
 
 export const metadata: Metadata = { title: "Profilo" };
 
@@ -41,8 +42,8 @@ export default async function ProfiloPage() {
 
       <ProfilePreferences squadre={squadre} giocatori={giocatori} />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Link href="/altro#notifiche" className="flex items-center gap-3 rounded-2xl glass p-4 hover:border-primary-glow/30">
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link href="/altro#notifiche" className="flex items-center gap-3 rounded-2xl glass p-4 hover:border-primary-glow/30 sm:flex-1">
           <span className="flex size-10 items-center justify-center rounded-xl bg-primary/15 text-primary-glow">
             <Bell className="size-4" />
           </span>
@@ -51,15 +52,10 @@ export default async function ProfiloPage() {
             <p className="text-xs text-muted-foreground">Goal, news e comunicati della Lega</p>
           </div>
         </Link>
-        <Link href="/admin" className="flex items-center gap-3 rounded-2xl glass p-4 hover:border-primary-glow/30">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-gold/15 text-gold-bright">
-            <ShieldCheck className="size-4" />
-          </span>
-          <div>
-            <p className="text-sm font-bold">Area Organizzatore</p>
-            <p className="text-xs text-muted-foreground">Accesso riservato allo staff della Lega</p>
-          </div>
-        </Link>
+        {/* Compare solo a chi ha già effettuato l'accesso come organizzatore: nessun
+            nodo nel DOM per chiunque altro, quindi "Gestisci notifiche" resta sola
+            e a piena larghezza invece di lasciare mezzo rigo vuoto accanto. */}
+        <OrganizerAreaLink variant="card" />
       </div>
     </Container>
   );

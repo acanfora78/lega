@@ -11,6 +11,7 @@ import { TopList } from "@/components/home/top-list";
 import { NewsCard } from "@/components/news/news-card";
 import { MediaCard } from "@/components/media/media-card";
 import { SponsorBanner } from "@/components/shared/sponsor-banner";
+import { OrganizerAreaLink } from "@/components/shared/organizer-area-link";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { TeamCrest } from "@/components/brand/team-crest";
 import { PitchBackdrop, StadiumLights, LegaMonogram } from "@/components/brand/pitch-art";
@@ -35,7 +36,7 @@ import {
   getStagioneAttuale,
 } from "@/lib/data";
 import { getCampionatiPassati } from "@/lib/data/storico";
-import { Trophy, Sparkles, ShieldCheck, Archive, ChevronRight } from "lucide-react";
+import { Trophy, Sparkles, Archive, ChevronRight } from "lucide-react";
 
 export default async function HomePage() {
   const [live, prossima, oggi, risultati, classificaCompleta, marcatoriRaw, assistRaw, news, mvp, giornata, albumCompleto, squadre, sponsor] =
@@ -101,12 +102,7 @@ export default async function HomePage() {
                 : "La nuova stagione non è ancora stata configurata. L'area organizzatore può iniziare subito ad aggiungere squadre, giocatori e calendario."}
             </p>
             <div className="mt-2 flex flex-wrap justify-center gap-3">
-              <Button asChild variant="gold">
-                <Link href="/admin">
-                  <ShieldCheck className="size-4" />
-                  Vai all&apos;area organizzatore
-                </Link>
-              </Button>
+              <OrganizerAreaLink variant="cta" />
               {campionatiPassati.length > 0 && (
                 <Button asChild variant="outline">
                   <Link href="/campionati-passati">
