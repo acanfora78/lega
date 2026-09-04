@@ -507,6 +507,25 @@ async function ricalcolaClassificaPerPartita(partita: Partita) {
   else await ricalcolaClassifica();
 }
 
+/**
+ * Segnare un risultato, un tabellino o un evento di gara vuol dire che la
+ * partita è stata giocata: la marca "conclusa" in automatico, a meno che
+ * l'organizzatore non l'abbia già segnata rinviata o sospesa esplicitamente
+ * (quelle restano come sono, non le tocca).
+ *
+ * Prima questo era un secondo passaggio manuale a sé, il menu "Stato
+ * partita": una partita importata da calendario nasce "programmata", e
+ * compilare tabellino o risultato non la cambiava. Chi si fermava lì (il
+ * caso comune) si ritrovava classifica e punti squadra fermi in eterno,
+ * perché ricalcolaClassificaPerPartita si attiva solo per le partite già
+ * "conclusa" — il risultato era scritto e visibile sulla partita stessa, ma
+ * non contava mai per nessuna classifica finché qualcuno non ricordava di
+ * cambiare a mano quel menu.
+ */
+function promuoviAConclusaSeGiocata(partita: Partita) {
+  if (partita.stato !== "rinviata" && partita.stato !== "sospesa") partita.stato = "conclusa";
+}
+
 // ---------------------------------------------------------------------------
 // SQUADRE
 // ---------------------------------------------------------------------------
@@ -621,6 +640,7 @@ export async function aggiornaRisultatoPartita(id: string, golCasa: number, golT
   if (!partita) return undefined;
   partita.golCasa = golCasa;
   partita.golTrasferta = golTrasferta;
+  promuoviAConclusaSeGiocata(partita);
   await persist(data);
   if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
   return partita;
@@ -743,6 +763,7 @@ export async function impostaTabellinoPartita(id: string, squadraId: string, rig
   else partita.formazioneTrasferta = esito.distinta;
   partita.golCasa = Math.max(0, partita.golCasa + esito.deltaGolCasa);
   partita.golTrasferta = Math.max(0, partita.golTrasferta + esito.deltaGolTrasferta);
+  promuoviAConclusaSeGiocata(partita);
 
   await persist(data);
   if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
@@ -764,6 +785,7 @@ export async function aggiungiEventoPartita(id: string, evento: EventoPartita) {
     if (evento.squadraId === partita.squadraCasaId) partita.golTrasferta += 1;
     else if (evento.squadraId === partita.squadraTrasfertaId) partita.golCasa += 1;
   }
+  promuoviAConclusaSeGiocata(partita);
   await persist(data);
   if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
   return partita;
@@ -808,11 +830,19 @@ export async function eliminaEventoPartita(id: string, eventoId: string) {
  * lettura, e le squalifiche registrate a mano in data.squalifiche non
  * referenziano una partita specifica (solo un numero di giornata), quindi
  * azzerare una gara non le tocca.
+ *
+ * Lo stato torna "programmata" (non solo il punteggio a 0-0): altrimenti una
+ * gara "conclusa" azzerata continuava a contare come giocata — un pareggio
+ * 0-0 fittizio nelle statistiche di entrambe le squadre — finché qualcuno
+ * non la ricompilava. Così sparisce davvero dal conteggio, pronta per essere
+ * rigiocata da capo (vedi promuoviAConclusaSeGiocata: tornerà "conclusa" da
+ * sola al primo salvataggio di risultato o tabellino).
  */
 export async function azzeraStatistichePartita(id: string) {
   const data = await load();
   const partita = data.partite.find((p) => p.id === id);
   if (!partita) return undefined;
+  const eraConclusa = partita.stato === "conclusa";
 
   partita.eventi = [];
   partita.golCasa = 0;
@@ -822,9 +852,10 @@ export async function azzeraStatistichePartita(id: string) {
   partita.formazioneTrasferta = undefined;
   partita.mvpGiocatoreId = undefined;
   partita.statistiche = undefined;
+  partita.stato = "programmata";
 
   await persist(data);
-  if (partita.stato === "conclusa") await ricalcolaClassificaPerPartita(partita);
+  if (eraConclusa) await ricalcolaClassificaPerPartita(partita);
   return partita;
 }
 

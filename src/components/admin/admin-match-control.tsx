@@ -122,26 +122,37 @@ export function AdminMatchControl({
     setGolCasa(partitaAggiornata.golCasa);
     setGolTrasferta(partitaAggiornata.golTrasferta);
     setEventi(partitaAggiornata.eventi);
+    // Compilare un tabellino marca la gara "conclusa" in automatico lato
+    // server (vedi promuoviAConclusaSeGiocata nello store): senza questo
+    // riallineamento il menu "Stato partita" restava fermo su "programmata"
+    // a schermo, anche se in archivio la classifica si era già aggiornata.
+    setStato(partitaAggiornata.stato);
     if (squadraId === casa.id) setRigheCasa(leggiTabellino(partitaAggiornata, rosterCasa));
     else setRigheTrasferta(leggiTabellino(partitaAggiornata, rosterTrasferta));
   }
 
-  async function patch(body: Record<string, unknown>) {
+  async function patch(body: Record<string, unknown>): Promise<Partita> {
     const res = await fetch(`/api/admin/partite/${partita.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     if (res.status === 404) setPartitaEliminata(true);
-    if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+    const corpo = await res.json();
+    if (!res.ok) throw new Error(corpo.error ?? "Errore");
     startTransition(() => router.refresh());
+    return corpo as Partita;
   }
 
   async function aggiornaRisultato(nuovoCasa: number, nuovoTrasferta: number) {
     setGolCasa(nuovoCasa);
     setGolTrasferta(nuovoTrasferta);
     try {
-      await patch({ golCasa: nuovoCasa, golTrasferta: nuovoTrasferta });
+      // Toccare il risultato marca la gara "conclusa" in automatico lato
+      // server se non era già rinviata/sospesa: si riallinea lo stato locale
+      // alla risposta, altrimenti il menu "Stato partita" resta indietro.
+      const partitaAggiornata = await patch({ golCasa: nuovoCasa, golTrasferta: nuovoTrasferta });
+      setStato(partitaAggiornata.stato);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Impossibile salvare il risultato");
     }
@@ -177,7 +188,11 @@ export function AdminMatchControl({
         body: JSON.stringify({ minuto: minutoForm, tipo: tipoForm, squadraId: squadraForm, giocatoreId: giocatoreForm }),
       });
       if (res.status === 404) setPartitaEliminata(true);
-      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      const corpo = await res.json();
+      if (!res.ok) throw new Error(corpo.error ?? "Errore");
+      // Un evento in cronaca marca la gara "conclusa" in automatico lato
+      // server (stesso motivo del risultato e del tabellino).
+      setStato(corpo.stato);
       toast.success("Evento aggiunto alla cronaca");
       startTransition(() => router.refresh());
     } catch (err) {
@@ -240,10 +255,12 @@ export function AdminMatchControl({
 
   /**
    * Cancella cronaca, distinta, voti, MVP e risultato riportando la gara a
-   * 0-0: la partita resta nel calendario, cambia solo cosa vi è registrato
-   * sopra. Se era conclusa, la classifica si aggiorna lato server di
-   * conseguenza — qui si azzera anche lo stato locale, così lo schermo non
-   * resta a mostrare un punteggio che in archivio non esiste più.
+   * 0-0 e allo stato "programmata": la partita resta nel calendario, cambia
+   * solo cosa vi è registrato sopra, e sparisce dal conteggio delle giocate
+   * finché non viene ricompilata. Se era conclusa, la classifica si
+   * aggiorna lato server di conseguenza — qui si azzera anche lo stato
+   * locale, così lo schermo non resta a mostrare un punteggio o uno stato
+   * "conclusa" che in archivio non esiste più.
    */
   async function azzeraStatistiche() {
     if (
@@ -264,6 +281,7 @@ export function AdminMatchControl({
       setGolTrasferta(0);
       setEventi([]);
       setMvpId("");
+      setStato("programmata");
       setRigheCasa(leggiTabellino(svuotata, rosterCasa));
       setRigheTrasferta(leggiTabellino(svuotata, rosterTrasferta));
 
