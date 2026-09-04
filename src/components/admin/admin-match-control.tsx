@@ -97,6 +97,27 @@ export function AdminMatchControl({
     }
   }
 
+  /**
+   * Il tabellino di UNA squadra è stato salvato: il server ha già
+   * riconciliato eventi e risultato (vedi src/lib/tabellino.ts), quindi qui
+   * si riallinea lo stato locale a quello — punteggio e cronaca sempre, il
+   * tabellino della sola squadra appena salvata. router.refresh() da solo
+   * non basterebbe: questo componente ha già copiato le props in uno stato
+   * locale al montaggio, e senza questo riallineamento esplicito resterebbe
+   * indietro finché la pagina non viene ricaricata a mano.
+   *
+   * L'altra squadra, se aveva modifiche non ancora salvate nel suo
+   * tabellino, le mantiene intatte: non c'è motivo di scartarle solo perché
+   * è stata salvata la prima.
+   */
+  function tabellinoSalvato(squadraId: string, partitaAggiornata: Partita) {
+    setGolCasa(partitaAggiornata.golCasa);
+    setGolTrasferta(partitaAggiornata.golTrasferta);
+    setEventi(partitaAggiornata.eventi);
+    if (squadraId === casa.id) setRigheCasa(leggiTabellino(partitaAggiornata, rosterCasa));
+    else setRigheTrasferta(leggiTabellino(partitaAggiornata, rosterTrasferta));
+  }
+
   async function patch(body: Record<string, unknown>) {
     const res = await fetch(`/api/admin/partite/${partita.id}`, {
       method: "PATCH",
@@ -310,6 +331,7 @@ export function AdminMatchControl({
         righeCasa={righeCasa}
         righeTrasferta={righeTrasferta}
         onChange={cambiaTabellino}
+        onSalvato={tabellinoSalvato}
         indisponibili={indisponibili}
       />
 

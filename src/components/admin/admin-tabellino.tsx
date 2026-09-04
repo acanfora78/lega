@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import type { RigaTabellino } from "@/lib/tabellino";
-import type { Giocatore, Squadra } from "@/lib/types";
+import type { Giocatore, Partita, Squadra } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /** Titolari di una gara a undici: oltre questa quota i nuovi convocati partono in panchina. */
@@ -56,6 +56,7 @@ export function AdminTabellino({
   righeCasa,
   righeTrasferta,
   onChange,
+  onSalvato,
   indisponibili,
 }: {
   partitaId: string;
@@ -66,6 +67,12 @@ export function AdminTabellino({
   righeCasa: RigaTabellino[];
   righeTrasferta: RigaTabellino[];
   onChange: (squadraId: string, righe: RigaTabellino[]) => void;
+  /**
+   * La squadra salvata da referto server (già riconciliato): il genitore lo
+   * usa per riallineare punteggio e cronaca senza aspettare il refresh della
+   * pagina, che da solo non farebbe ripartire lo stato locale già montato.
+   */
+  onSalvato: (squadraId: string, partita: Partita) => void;
   /** giocatoreId → squalifica in corso su questa giornata. */
   indisponibili: Record<string, string>;
 }) {
@@ -112,6 +119,7 @@ export function AdminTabellino({
           roster={roster}
           righe={righe}
           onChange={(nuove) => onChange(squadra.id, nuove)}
+          onSalvato={(partita) => onSalvato(squadra.id, partita)}
           indisponibili={indisponibili}
         />
       </CardContent>
@@ -125,6 +133,7 @@ function RefertoSquadra({
   roster,
   righe,
   onChange,
+  onSalvato,
   indisponibili,
 }: {
   partitaId: string;
@@ -132,6 +141,7 @@ function RefertoSquadra({
   roster: Giocatore[];
   righe: RigaTabellino[];
   onChange: (righe: RigaTabellino[]) => void;
+  onSalvato: (partita: Partita) => void;
   indisponibili: Record<string, string>;
 }) {
   const router = useRouter();
@@ -211,7 +221,14 @@ function RefertoSquadra({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ squadraId: squadra.id, righe }),
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      const corpo = await res.json();
+      if (!res.ok) throw new Error(corpo.error ?? "Errore");
+      // La partita tornata dal server è già riconciliata (risultato spostato
+      // della differenza, minuti preservati): il genitore la usa per
+      // riallineare punteggio e cronaca subito, senza aspettare che
+      // router.refresh() ridia le props a un componente che le ha già
+      // copiate una volta sola nel proprio stato.
+      onSalvato(corpo);
       toast.success(`Tabellino ${squadra.nomeBreve} salvato: ${presenti.length} presenti, ${reti} reti`);
       startTransition(() => router.refresh());
     } catch (err) {
