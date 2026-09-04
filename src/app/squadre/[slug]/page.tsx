@@ -137,12 +137,13 @@ export default async function SquadraDetailPage({ params }: { params: Promise<{ 
             <h2 className="mb-4 font-display text-xl font-bold tracking-tight">Ultimi risultati</h2>
             <div className="flex flex-col gap-3">
               {ultime.length ? ultime.map((p) => (
-                <MatchCard
-                  key={p.id}
-                  partita={p}
-                  casa={squadreUltime.get(p.squadraCasaId)!}
-                  trasferta={squadreUltime.get(p.squadraTrasfertaId)!}
-                />
+                <Link key={p.id} href={`/partite/${p.id}`} className="block hover:opacity-80 transition-opacity">
+                  <MatchCard
+                    partita={p}
+                    casa={squadreUltime.get(p.squadraCasaId)!}
+                    trasferta={squadreUltime.get(p.squadraTrasfertaId)!}
+                  />
+                </Link>
               )) : (
                 <p className="text-sm text-muted-foreground">Nessun risultato disponibile.</p>
               )}
