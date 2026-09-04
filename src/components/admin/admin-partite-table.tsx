@@ -135,15 +135,20 @@ export function AdminPartiteTable({ partite, squadre }: { partite: Partita[]; sq
               resta scoperto. Giornata, Sfida, Risultato e Azioni — comprese
               Gestisci ed Elimina — restano sempre visibili. */}
           <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
+          {/* table-fixed + larghezze fisse sulle colonne sempre visibili: nomi
+              squadra lunghi ("Wine Team Santarpia", "Giemme Team Soccer") non
+              devono più allargare "Sfida" a piacimento spingendo "Azioni"
+              fuori dallo schermo — è lei sola a restare elastica, il resto ha
+              un tetto e tronca con l'ellissi invece di spingere. */}
+          <table className="w-full table-fixed border-collapse text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-3">Giornata</th>
-                <th className="hidden px-2 py-3 sm:table-cell">Data</th>
+                <th className="w-12 px-4 py-3">Giornata</th>
+                <th className="hidden px-2 py-3 sm:table-cell sm:w-32">Data</th>
                 <th className="px-2 py-3">Sfida</th>
-                <th className="px-2 py-3 text-center">Risultato</th>
-                <th className="hidden px-2 py-3 text-center sm:table-cell">Stato</th>
-                <th className="px-4 py-3 text-right">Azioni</th>
+                <th className="w-16 px-2 py-3 text-center">Risultato</th>
+                <th className="hidden px-2 py-3 text-center sm:table-cell sm:w-28">Stato</th>
+                <th className="w-24 px-4 py-3 text-right">Azioni</th>
               </tr>
             </thead>
             <tbody>
