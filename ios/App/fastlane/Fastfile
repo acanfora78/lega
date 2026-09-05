@@ -20,6 +20,28 @@ platform :ios do
       key_filepath: key_path
     )
 
+    # Diagnostica: verifica le credenziali con una chiamata REST reale
+    # all'App Store Connect API, indipendente dal servizio di firma di
+    # xcodebuild (quello dietro -authenticationKeyPath/ID/IssuerID, che ha
+    # dato "Communication with Apple failed (401)" nei tentativi precedenti
+    # nonostante Key ID e file .p8 risultassero corretti). Se questa chiamata
+    # riesce, le credenziali sono valide e il problema è specifico del
+    # servizio di firma automatica (spesso in ritardo sugli account nuovi);
+    # se fallisce anche questa, il problema è nei valori dei secret stessi.
+    begin
+      require "spaceship"
+      token = Spaceship::ConnectAPI::Token.create(
+        key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID"),
+        issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
+        filepath: key_path
+      )
+      Spaceship::ConnectAPI.token = token
+      apps = Spaceship::ConnectAPI::App.all
+      UI.success("✅ DIAGNOSTICA: connessione ad App Store Connect riuscita. App visibili: #{apps.map(&:bundle_id).join(', ')}")
+    rescue => e
+      UI.error("❌ DIAGNOSTICA: connessione ad App Store Connect FALLITA: #{e.class} — #{e.message}")
+    end
+
     # Numero di build sempre nuovo e crescente: TestFlight rifiuta due upload
     # con lo stesso numero per la stessa versione, quindi non può essere un
     # valore fisso nel repo — arriva dalla run di GitHub Actions che ha
