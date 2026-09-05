@@ -1,0 +1,2 @@
+app_identifier("it.legacalciooverquaranta.legaover40")
+team_id(ENV["APPLE_TEAM_ID"])

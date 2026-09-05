@@ -1,0 +1,78 @@
+name: iOS — Build e carica su TestFlight
+
+# ============================================================================
+# Compila l'app iOS (wrapper Capacitor attorno al sito live) e la carica su
+# TestFlight, tutto su un runner macOS in cloud: nessun Mac fisico necessario.
+#
+# La firma del codice è "Automatic" nel progetto Xcode: xcodebuild genera e
+# rinnova da solo certificato e profilo di distribuzione, autorizzato dalla
+# App Store Connect API Key (mai una password Apple ID in CI). I 4 valori
+# sotto vanno creati una volta come secret del repository — non vanno mai
+# scritti qui né altrove nel codice (Settings → Secrets and variables →
+# Actions):
+#   APP_STORE_CONNECT_KEY_ID      Key ID della chiave API
+#   APP_STORE_CONNECT_ISSUER_ID   Issuer ID della chiave API
+#   APP_STORE_CONNECT_API_KEY     contenuto del file .p8 scaricato da Apple
+#   APPLE_TEAM_ID                 Team ID (Membership) del developer account
+#
+# Lanciata manualmente (tasto "Run workflow" nella tab Actions di GitHub):
+# ogni run produce un numero di build univoco (github.run_number), come
+# richiesto da TestFlight per accettare l'upload.
+# ============================================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "Nota per questa build (facoltativa, solo per il log)"
+        required: false
+        default: ""
+
+jobs:
+  build-and-upload:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout del repository
+        uses: actions/checkout@v4
+
+      - name: Seleziona Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Installa le dipendenze del progetto
+        run: npm ci
+
+      - name: Sincronizza il progetto Capacitor
+        run: npx cap sync ios
+
+      - name: Setup Ruby e fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: ios/App
+
+      - name: Compila e carica su TestFlight
+        working-directory: ios/App
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: bundle exec fastlane beta
+
+      - name: Carica il log di build in caso di errore
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fastlane-logs
+          path: ~/Library/Logs/gym
+          if-no-files-found: ignore

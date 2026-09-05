@@ -1,0 +1,39 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Compila l'app e la carica su TestFlight con la App Store Connect API Key — nessuna password Apple ID né certificato manuale in CI: la firma è automatica (CODE_SIGN_STYLE = Automatic nel progetto), la chiave API autorizza xcodebuild a generare/rinnovare da sé certificato e profilo distribuzione."
+  lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID"),
+      issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
+      key_content: ENV.fetch("APP_STORE_CONNECT_API_KEY"),
+      is_key_content_base64: false
+    )
+
+    # Numero di build sempre nuovo e crescente: TestFlight rifiuta due upload
+    # con lo stesso numero per la stessa versione, quindi non può essere un
+    # valore fisso nel repo — arriva dalla run di GitHub Actions che ha
+    # lanciato la lane (vedi il workflow .github/workflows/ios-testflight.yml).
+    increment_build_number(
+      xcodeproj: "App.xcodeproj",
+      build_number: ENV.fetch("BUILD_NUMBER", Time.now.strftime("%Y%m%d%H%M"))
+    )
+
+    build_app(
+      project: "App.xcodeproj",
+      scheme: "App",
+      export_method: "app-store",
+      export_options: {
+        signingStyle: "automatic",
+        teamID: ENV.fetch("APPLE_TEAM_ID")
+      },
+      xcargs: "-allowProvisioningUpdates",
+      api_key: api_key
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true
+    )
+  end
+end

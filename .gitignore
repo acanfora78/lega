@@ -40,9 +40,22 @@ yarn-error.log*
 # store dati reale della lega (persistenza locale su file, non va committato)
 /.data/
 
-# progetti nativi generati da Capacitor
-/ios/
+# progetto nativo Android: non ancora usato, resta ignorato per intero
 /android/
+
+# progetto nativo iOS (Capacitor): il progetto Xcode va committato — è quello
+# che la CI (.github/workflows/ios-testflight.yml) compila su un runner
+# macOS — ma non i prodotti di build locali né le preferenze utente di Xcode
+ios/App/build/
+ios/App/DerivedData/
+ios/App/Pods/
+**/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+ios/App/*.ipa
+ios/App/fastlane/report.xml
+ios/App/fastlane/Preview.html
+ios/App/fastlane/screenshots/
+ios/App/fastlane/test_output/
 
 # typescript
 *.tsbuildinfo
