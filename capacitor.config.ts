@@ -15,8 +15,7 @@ const config: CapacitorConfig = {
   appName: "Lega Over 40",
   webDir: "ios-shell",
   server: {
-    // TODO: sostituire con l'URL di produzione reale confermato dall'utente.
-    url: "https://REPLACE-WITH-PRODUCTION-URL",
+    url: "https://lega-eosin.vercel.app",
     cleartext: false,
   },
   ios: {
