@@ -55,9 +55,9 @@ platform :ios do
         teamID: ENV.fetch("APPLE_TEAM_ID")
       },
       xcargs: "-allowProvisioningUpdates " \
-        "-authenticationKeyPath \"#{api_key[:filepath]}\" " \
-        "-authenticationKeyID \"#{api_key[:key_id]}\" " \
-        "-authenticationKeyIssuerID \"#{api_key[:issuer_id]}\""
+        "-authenticationKeyPath \"#{key_path}\" " \
+        "-authenticationKeyID \"#{ENV.fetch('APP_STORE_CONNECT_KEY_ID')}\" " \
+        "-authenticationKeyIssuerID \"#{ENV.fetch('APP_STORE_CONNECT_ISSUER_ID')}\""
     )
 
     upload_to_testflight(
