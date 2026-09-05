@@ -19,6 +19,18 @@ platform :ios do
       build_number: ENV.fetch("BUILD_NUMBER", Time.now.strftime("%Y%m%d%H%M"))
     )
 
+    # export_options.teamID (sotto) vale solo per l'esportazione dell'IPA a
+    # fine build: la fase di ARCHIVIO che viene prima non lo legge, e senza
+    # un Development Team scritto nel progetto stesso xcodebuild si ferma
+    # con "Signing for App requires a development team" — è quello che è
+    # successo al tentativo precedente. Questa action scrive il team id
+    # direttamente nel project.pbxproj, dove la fase di archivio lo trova.
+    update_code_signing_settings(
+      use_automatic_signing: true,
+      path: "App.xcodeproj",
+      team_id: ENV.fetch("APPLE_TEAM_ID")
+    )
+
     # build_app (gym/xcodebuild) non accetta un parametro "api_key" — quello
     # è per le azioni che parlano con App Store Connect via web (deliver,
     # pilot/upload_to_testflight sotto). Qui l'autorizzazione per la firma
