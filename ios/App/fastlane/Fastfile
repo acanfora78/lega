@@ -1,13 +1,23 @@
+require "tmpdir"
+
 default_platform(:ios)
 
 platform :ios do
   desc "Compila l'app e la carica su TestFlight con la App Store Connect API Key — nessuna password Apple ID né certificato manuale in CI: la firma è automatica (CODE_SIGN_STYLE = Automatic nel progetto), la chiave API autorizza xcodebuild a generare/rinnovare da sé certificato e profilo distribuzione."
   lane :beta do
+    # app_store_connect_api_key con key_content NON scrive da sé un file su
+    # disco (lo tiene solo in memoria, per le action che parlano con App
+    # Store Connect via rete) — api_key[:filepath] restava vuoto e xcodebuild
+    # si ritrovava con -authenticationKeyPath "" (tentativo precedente).
+    # xcodebuild invece un file lo pretende davvero: lo si scrive qui a mano,
+    # e si passa key_filepath (non key_content) così l'action lo popola.
+    key_path = File.join(Dir.tmpdir, "app_store_connect_api_key.p8")
+    File.write(key_path, ENV.fetch("APP_STORE_CONNECT_API_KEY"))
+
     api_key = app_store_connect_api_key(
       key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID"),
       issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
-      key_content: ENV.fetch("APP_STORE_CONNECT_API_KEY"),
-      is_key_content_base64: false
+      key_filepath: key_path
     )
 
     # Numero di build sempre nuovo e crescente: TestFlight rifiuta due upload
