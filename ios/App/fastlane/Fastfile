@@ -3,7 +3,7 @@ require "tmpdir"
 default_platform(:ios)
 
 platform :ios do
-  desc "Compila l'app e la carica su TestFlight con la App Store Connect API Key — nessuna password Apple ID né certificato manuale in CI: la firma è automatica (CODE_SIGN_STYLE = Automatic nel progetto), la chiave API autorizza xcodebuild a generare/rinnovare da sé certificato e profilo distribuzione."
+  desc "Compila l'app e la carica su TestFlight con la App Store Connect API Key — nessuna password Apple ID in CI. Certificato e profilo di distribuzione sono creati esplicitamente con la chiave API (cert/sigh) prima dell'archivio, invece di lasciarli generare al volo da xcodebuild in firma automatica: su un runner CI mai autenticato prima, quella strada si fermava su \"No Account for Team\"."
   lane :beta do
     # app_store_connect_api_key con key_content NON scrive da sé un file su
     # disco (lo tiene solo in memoria, per le action che parlano con App
@@ -51,42 +51,52 @@ platform :ios do
       build_number: ENV.fetch("BUILD_NUMBER", Time.now.strftime("%Y%m%d%H%M"))
     )
 
-    # export_options.teamID (sotto) vale solo per l'esportazione dell'IPA a
-    # fine build: la fase di ARCHIVIO che viene prima non lo legge, e senza
-    # un Development Team scritto nel progetto stesso xcodebuild si ferma
-    # con "Signing for App requires a development team" — è quello che è
-    # successo al tentativo precedente. Questa action scrive il team id
-    # direttamente nel project.pbxproj, dove la fase di archivio lo trova.
-    update_code_signing_settings(
-      use_automatic_signing: true,
-      path: "App.xcodeproj",
+    app_identifier = "it.legacalciooverquaranta.legaover40"
+
+    # La firma "Automatic" con -allowProvisioningUpdates ha smesso di dare
+    # errori di autenticazione (la diagnostica sopra lo conferma: le
+    # credenziali sono valide), ma si è fermata comunque su "No Account for
+    # Team" / "No profiles ... were found" anche forzando la configurazione
+    # Release — segno che su un runner CI mai usato prima, la risoluzione
+    # "al volo" della firma durante l'archivio non riesce a creare un
+    # account interno di Xcode, pur con la chiave API corretta. Si aggira
+    # creando certificato e profilo esplicitamente PRIMA, con la stessa
+    # chiave API (già verificata funzionante), invece di lasciarli generare
+    # da xcodebuild durante l'archivio.
+    cert(
+      development: false,
+      api_key: api_key,
       team_id: ENV.fetch("APPLE_TEAM_ID")
     )
 
-    # build_app (gym/xcodebuild) non accetta un parametro "api_key" — quello
-    # è per le azioni che parlano con App Store Connect via web (deliver,
-    # pilot/upload_to_testflight sotto). Qui l'autorizzazione per la firma
-    # automatica va data a xcodebuild stesso, con i tre flag -authenticationKey*
-    # che puntano al file .p8 scritto su disco da app_store_connect_api_key.
+    sigh(
+      api_key: api_key,
+      app_identifier: app_identifier,
+      team_id: ENV.fetch("APPLE_TEAM_ID"),
+      force: true
+    )
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "App.xcodeproj",
+      team_id: ENV.fetch("APPLE_TEAM_ID"),
+      code_sign_identity: "Apple Distribution",
+      bundle_identifier: app_identifier,
+      profile_name: ENV.fetch("SIGH_PROFILE_NAME")
+    )
+
     build_app(
       project: "App.xcodeproj",
       scheme: "App",
-      # Senza questo, gym lasciava decidere allo scheme quale configurazione
-      # archiviare: il tentativo precedente (credenziali finalmente valide,
-      # vedi diagnostica sopra) si è fermato su "No profiles ... iOS App
-      # Development" — un profilo di sviluppo, non di distribuzione — segno
-      # che stava archiviando la build Debug invece che Release. Forzando
-      # Release, l'archivio chiede il profilo giusto per l'App Store.
       configuration: "Release",
       export_method: "app-store",
       export_options: {
-        signingStyle: "automatic",
-        teamID: ENV.fetch("APPLE_TEAM_ID")
-      },
-      xcargs: "-allowProvisioningUpdates " \
-        "-authenticationKeyPath \"#{key_path}\" " \
-        "-authenticationKeyID \"#{ENV.fetch('APP_STORE_CONNECT_KEY_ID')}\" " \
-        "-authenticationKeyIssuerID \"#{ENV.fetch('APP_STORE_CONNECT_ISSUER_ID')}\""
+        signingStyle: "manual",
+        teamID: ENV.fetch("APPLE_TEAM_ID"),
+        provisioningProfiles: {
+          app_identifier => ENV.fetch("SIGH_PROFILE_NAME")
+        }
+      }
     )
 
     upload_to_testflight(
