@@ -1,4 +1,5 @@
 require "tmpdir"
+require "fileutils"
 
 default_platform(:ios)
 
@@ -74,6 +75,20 @@ platform :ios do
       app_identifier: app_identifier,
       team_id: ENV.fetch("APPLE_TEAM_ID"),
       force: true
+    )
+
+    # sigh scarica il profilo e riporta "Installing provisioning profile...",
+    # ma sul runner appena avviato il file finiva nella cartella di lavoro
+    # del progetto, non in ~/Library/MobileDevice/Provisioning Profiles/ —
+    # il posto dove xcodebuild lo cerca davvero in firma manuale (confermato
+    # dal log del tentativo precedente: "No profile ... found" con lo stesso
+    # identico nome appena configurato). Lo si copia lì esplicitamente,
+    # nominato con lo UUID come richiede Xcode.
+    profiles_dir = File.expand_path("~/Library/MobileDevice/Provisioning Profiles")
+    FileUtils.mkdir_p(profiles_dir)
+    FileUtils.cp(
+      lane_context[SharedValues::SIGH_PROFILE_PATH],
+      File.join(profiles_dir, "#{lane_context[SharedValues::SIGH_UUID]}.mobileprovision")
     )
 
     update_code_signing_settings(
