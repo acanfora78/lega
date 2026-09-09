@@ -71,6 +71,13 @@ platform :ios do
     build_app(
       project: "App.xcodeproj",
       scheme: "App",
+      # Senza questo, gym lasciava decidere allo scheme quale configurazione
+      # archiviare: il tentativo precedente (credenziali finalmente valide,
+      # vedi diagnostica sopra) si è fermato su "No profiles ... iOS App
+      # Development" — un profilo di sviluppo, non di distribuzione — segno
+      # che stava archiviando la build Debug invece che Release. Forzando
+      # Release, l'archivio chiede il profilo giusto per l'App Store.
+      configuration: "Release",
       export_method: "app-store",
       export_options: {
         signingStyle: "automatic",
