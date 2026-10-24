@@ -289,7 +289,7 @@ async function persistToSupabase(data: LegaData) {
 let filesystemScrivibile = true;
 
 function loadFromFile(): LegaData {
-  if (!filesystemScrivibile) return statoIniziale();
+  if (!filesystemScrivibile) return statoNonDisponibile();
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     if (!fs.existsSync(DATA_FILE)) {
@@ -315,12 +315,36 @@ function loadFromFile(): LegaData {
           "Vedi il README, sezione 'Passare a Supabase in produzione'."
       );
     }
-    return statoIniziale();
+    return statoNonDisponibile();
+  }
+}
+
+function statoNonDisponibile(): LegaData {
+  const vuoto = statoIniziale();
+  letturaFallita.add(vuoto);
+  return vuoto;
+}
+
+/**
+ * Errore esplicito quando i dati non si possono scrivere da nessuna parte.
+ * Prima persistToFile in questi casi tornava in silenzio: l'API rispondeva
+ * "salvato", e al ricaricamento la modifica non c'era — il disservizio
+ * "salvo, ricarico, è sparito" riprodotto creando una squadra con il disco
+ * non scrivibile (risposta OK, zero squadre alla rilettura).
+ */
+class SalvataggioImpossibileError extends Error {
+  constructor(dettaglio: string) {
+    super(
+      `Modifica NON salvata: ${dettaglio}. Su Vercel serve Supabase configurato (NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY).`
+    );
+    this.name = "SalvataggioImpossibileError";
   }
 }
 
 function persistToFile(data: LegaData) {
-  if (!filesystemScrivibile) return;
+  if (!filesystemScrivibile) throw new SalvataggioImpossibileError("nessun database configurato e disco in sola lettura");
+  // Come per Supabase: dati mai letti davvero non si scrivono sopra a quelli veri.
+  if (letturaFallita.has(data)) throw new SalvataggioImpossibileError("i dati esistenti non si sono potuti leggere");
   const versioneAttesa = versioneDi.get(data);
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -336,6 +360,8 @@ function persistToFile(data: LegaData) {
   } catch (err) {
     if (err instanceof ConflittoScritturaError) throw err;
     if (isFilesystemReadOnly(err)) filesystemScrivibile = false;
+    const codice = (err as NodeJS.ErrnoException)?.code;
+    throw new SalvataggioImpossibileError(`scrittura su disco fallita${codice ? ` (${codice})` : ""}`);
   }
 }
 
@@ -397,6 +423,54 @@ async function persist(data: LegaData) {
 export const getStore = cache(async function getStore(): Promise<LegaData> {
   return load();
 });
+
+export type PassoDiagnostica = { passo: string; ok: boolean; dettaglio: string };
+
+/**
+ * Prova reale del ciclo salva → ricarica sul database davvero collegato a
+ * questo server: rilegge, riscrive gli stessi dati invariati, rilegge di
+ * nuovo e controlla che la versione sia avanzata. Dice in quale passo si
+ * rompe, invece di dover indovinare perché "al ricaricamento non c'è più".
+ */
+export async function diagnosticaSalvataggio(): Promise<{ backend: string; passi: PassoDiagnostica[] }> {
+  const backend = isSupabaseConfigured ? "Supabase" : "File locale (nessun Supabase configurato)";
+  const passi: PassoDiagnostica[] = [];
+
+  const data = await load();
+  if (letturaFallita.has(data)) {
+    passi.push({ passo: "Lettura dati", ok: false, dettaglio: "il database non ha risposto (in pausa o non configurato)" });
+    return { backend, passi };
+  }
+  passi.push({
+    passo: "Lettura dati",
+    ok: true,
+    dettaglio: `${data.squadre.length} squadre, ${data.partite.length} partite, ${data.competizioni.length} competizioni`,
+  });
+
+  const versionePrima = versioneDi.get(data);
+  try {
+    await persist(data);
+    passi.push({ passo: "Salvataggio di prova (dati invariati)", ok: true, dettaglio: "scrittura accettata" });
+  } catch (err) {
+    passi.push({ passo: "Salvataggio di prova (dati invariati)", ok: false, dettaglio: err instanceof Error ? err.message : String(err) });
+    return { backend, passi };
+  }
+
+  const riletto = await load();
+  const ok =
+    !letturaFallita.has(riletto) &&
+    versioneDi.get(riletto) !== versionePrima &&
+    riletto.squadre.length === data.squadre.length &&
+    riletto.partite.length === data.partite.length;
+  passi.push({
+    passo: "Rilettura dopo il salvataggio",
+    ok,
+    dettaglio: ok
+      ? "il salvataggio risulta davvero nel database"
+      : "dopo il salvataggio il database restituisce ancora i dati di prima: la scrittura non è arrivata",
+  });
+  return { backend, passi };
+}
 
 /** false quando il database non ha risposto e i dati mostrati sono un segnaposto vuoto. */
 export async function archivioRaggiungibile(): Promise<boolean> {
