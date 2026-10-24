@@ -119,6 +119,15 @@ export function revalidateImpostazioni() {
   revalidateMany(["/", "/classifica", "/statistiche", "/partite", "/squadre", "/disciplinare"]);
 }
 
+/**
+ * Dopo un azzeramento cambiano potenzialmente tutte le pagine (anche le schede
+ * di squadre e giocatori che non esistono più): qui l'invalidazione totale del
+ * layout radice è proprio quella giusta, a differenza delle scritture puntuali.
+ */
+export function revalidateTutto() {
+  revalidatePath("/", "layout");
+}
+
 export function revalidateCompetizioni(slug?: string) {
   revalidateMany(["/", "/competizioni"]);
   if (slug) revalidatePath(`/competizioni/${slug}`);

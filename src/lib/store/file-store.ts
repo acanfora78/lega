@@ -182,6 +182,13 @@ function statoIniziale(): LegaData {
 const versioneDi = new WeakMap<LegaData, string>();
 /** Sentinella: la riga non esisteva ancora quando è stata letta (primo avvio). */
 const RIGA_ASSENTE = "riga-assente";
+/**
+ * Stati vuoti restituiti al posto dei dati veri perché il database non ha
+ * risposto (es. progetto Supabase in pausa). Senza questo segno erano
+ * indistinguibili da una lega davvero vuota: l'area organizzatore mostrava
+ * "nessuna squadra" invece di dire che il database era irraggiungibile.
+ */
+const letturaFallita = new WeakSet<LegaData>();
 
 export class ConflittoScritturaError extends Error {
   constructor() {
@@ -215,7 +222,9 @@ async function loadFromSupabase(): Promise<LegaData> {
     // vera, un danno ben peggiore del conflitto che questo meccanismo vuole
     // prevenire.
     console.warn("[store] Lettura da Supabase fallita, uso stato iniziale in memoria.", err);
-    return statoIniziale();
+    const vuoto = statoIniziale();
+    letturaFallita.add(vuoto);
+    return vuoto;
   }
 }
 
@@ -388,6 +397,11 @@ async function persist(data: LegaData) {
 export const getStore = cache(async function getStore(): Promise<LegaData> {
   return load();
 });
+
+/** false quando il database non ha risposto e i dati mostrati sono un segnaposto vuoto. */
+export async function archivioRaggiungibile(): Promise<boolean> {
+  return !letturaFallita.has(await getStore());
+}
 
 // ---------------------------------------------------------------------------
 // CLASSIFICA — ricalcolata automaticamente ad ogni scrittura di risultato
@@ -621,6 +635,78 @@ export async function svuotaCalendarioPartite() {
   const data = await load();
   data.partite = data.partite.filter((p) => Boolean(p.competizioneId));
   data.classifica = calcolaClassifica(data.squadre, []);
+  await persist(data);
+}
+
+/**
+ * Cosa azzerare dall'area organizzatore:
+ * - "risultati": ogni partita (campionato e competizioni) torna "programmata"
+ *   a 0-0, senza cronaca, tabellino, voti né MVP; classifiche, squalifiche e
+ *   premi settimanali ripartono da zero. Squadre, giocatori e calendario restano.
+ * - "competizioni": spariscono tutte le competizioni aggiuntive con le loro
+ *   partite e classifiche. Il campionato principale non è toccato.
+ * - "tutto": la lega torna vuota (squadre, giocatori, calendario, competizioni,
+ *   news, media, sponsor, notifiche, squalifiche). Restano solo le impostazioni
+ *   della lega (nome, campo, contatti, stagione).
+ */
+export type AmbitoAzzeramento = "risultati" | "competizioni" | "tutto";
+
+export async function azzeraDati(ambito: AmbitoAzzeramento) {
+  const data = await load();
+
+  if (ambito === "tutto") {
+    const vuoto = statoIniziale();
+    data.squadre = vuoto.squadre;
+    data.giocatori = vuoto.giocatori;
+    data.partite = vuoto.partite;
+    data.competizioni = vuoto.competizioni;
+    data.articoli = vuoto.articoli;
+    data.albumMedia = vuoto.albumMedia;
+    data.sponsor = vuoto.sponsor;
+    data.premiSettimanali = vuoto.premiSettimanali;
+    data.notifiche = vuoto.notifiche;
+    data.squalifiche = vuoto.squalifiche;
+  } else if (ambito === "competizioni") {
+    data.partite = data.partite.filter((p) => !p.competizioneId);
+    data.competizioni = [];
+  } else {
+    data.partite = data.partite.map((p): Partita => ({
+      ...p,
+      stato: "programmata",
+      golCasa: 0,
+      golTrasferta: 0,
+      eventi: [],
+      voti: [],
+      formazioneCasa: undefined,
+      formazioneTrasferta: undefined,
+      mvpGiocatoreId: undefined,
+      statistiche: undefined,
+    }));
+    data.squalifiche = [];
+    data.premiSettimanali = [];
+  }
+
+  // Classifiche ricalcolate dallo stato appena azzerato, non svuotate: così
+  // le squadre restano in tabella a zero punti invece di sparire.
+  data.classifica = calcolaClassifica(
+    data.squadre,
+    data.partite.filter((p) => !p.competizioneId)
+  );
+  data.classificheCompetizioni = {};
+  for (const c of data.competizioni) {
+    const partiteC = data.partite.filter((p) => p.competizioneId === c.id);
+    data.classificheCompetizioni[c.id] = calcolaClassifica(
+      data.squadre.filter((s) => c.squadreIscritteIds.includes(s.id)),
+      partiteC.filter((p) => !p.faseId)
+    );
+    for (const f of c.fasi) {
+      data.classificheCompetizioni[`${c.id}:${f.id}`] = calcolaClassifica(
+        data.squadre.filter((s) => f.squadreIds.includes(s.id)),
+        partiteC.filter((p) => p.faseId === f.id)
+      );
+    }
+  }
+
   await persist(data);
 }
 

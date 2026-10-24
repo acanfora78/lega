@@ -20,8 +20,29 @@
 // usa solo l'organizzatore), non serve la generazione statica da nessuna
 // parte qui dentro.
 // ============================================================================
+import { archivioRaggiungibile } from "@/lib/store/file-store";
+
 export const dynamic = "force-dynamic";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  // Se il database non risponde (es. progetto Supabase in pausa) le pagine
+  // mostrerebbero una lega vuota come se i dati fossero spariti, e ogni
+  // salvataggio fallirebbe: lo si dice chiaramente invece di lasciarlo intuire.
+  const raggiungibile = await archivioRaggiungibile();
+  return (
+    <>
+      {!raggiungibile && (
+        <div className="mx-auto mt-4 max-w-6xl px-4">
+          <div className="rounded-xl border border-danger/50 bg-danger/10 p-4 text-sm">
+            <p className="font-bold text-danger">Database non raggiungibile — i dati non vengono mostrati né salvati</p>
+            <p className="mt-1 text-muted-foreground">
+              I dati non sono persi. Controlla su supabase.com che il progetto non sia in pausa (se lo è, premi
+              &quot;Restore&quot;), poi ricarica questa pagina.
+            </p>
+          </div>
+        </div>
+      )}
+      {children}
+    </>
+  );
 }

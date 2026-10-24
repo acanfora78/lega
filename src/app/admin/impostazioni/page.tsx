@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/shared/container";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminImpostazioniForm } from "@/components/admin/admin-impostazioni-form";
+import { AdminAzzeramento } from "@/components/admin/admin-azzeramento";
 import { getImpostazioni } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Impostazioni Lega" };
@@ -15,7 +16,10 @@ export default async function AdminImpostazioniPage() {
         <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">Impostazioni della Lega</h1>
       </div>
       <AdminShell>
-        <AdminImpostazioniForm impostazioni={impostazioni} />
+        <div className="flex flex-col gap-6">
+          <AdminImpostazioniForm impostazioni={impostazioni} />
+          <AdminAzzeramento />
+        </div>
       </AdminShell>
     </Container>
   );
